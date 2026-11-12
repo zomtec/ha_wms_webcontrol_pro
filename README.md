@@ -1,7 +1,9 @@
 # WMS WebControl pro for Home Assistant
 
-Custom integration (HACS) for the Warema WMS WebControl pro gateway. It controls the
-components of the WMS radio system through the local API of the gateway.
+Custom integration (HACS) for the [Warema](https://www.warema.com) WMS WebControl pro
+gateway. The gateway connects the WMS radio system of Warema (awnings, roller shutters,
+blinds, lights and other components) to the network. This integration controls these
+components from Home Assistant through the local API of the gateway, without a cloud.
 
 The integration uses the library
 [`pywmswebcontrolpro`](https://github.com/zomtec/pywmswebcontrolpro). All device logic
@@ -18,6 +20,27 @@ lives in the library, the integration only maps it to Home Assistant entities.
 - The domain is `wms_webcontrol_pro`. It can be installed next to the core
   integration [`wmspro`](https://github.com/home-assistant/core/tree/dev/homeassistant/components/wmspro), but both must never control the same gateway at the same time.
 
+## Supported devices and functions
+
+The integration supports the gateway with all components that it announces with one of
+these functions:
+
+- awnings, valances, roller shutters, blinds and slat drives (with and without tilt)
+- switchable lights, dimmers and loads
+- scenes of the gateway
+- the identify function of components that offer it
+
+Other functions of a component, for example sensors, are not supported. Which entities
+a component gets is described in [Entities](#entities).
+
+## Use cases
+
+- Open, close and position awnings, shutters and blinds from the dashboard, with the
+  slats of blinds tilted separately.
+- Shade a room automatically by sun, temperature or time.
+- Switch the lights and loads that are connected to the WMS system.
+- Start the scenes that are configured in the gateway.
+
 ## Installation
 
 1. Add this repository as a custom repository of type *Integration* in HACS.
@@ -25,6 +48,22 @@ lives in the library, the integration only maps it to Home Assistant entities.
 3. Go to *Settings, Devices & services, Add integration* and search for
    *WMS WebControl pro*. Enter the host name or IP address of the gateway. A gateway
    announced by DHCP is offered for setup automatically.
+
+### Installation parameters
+
+| Parameter | Description |
+| --- | --- |
+| Host | Host name or IP address of the WMS WebControl pro. The setup checks that the gateway answers. |
+
+A gateway that is set up once cannot be set up a second time. The integration has no
+options, all settings (travel times, rotation limits) are number entities.
+
+### Removal
+
+1. Go to *Settings, Devices & services*, open *WMS WebControl pro* and choose *Delete*
+   in the menu of the entry. The devices and entities are removed and the stored data
+   (see [Stored data](#stored-data)) is deleted.
+2. Remove the integration in HACS if it is not needed any more.
 
 ## Entities
 
@@ -71,14 +110,15 @@ rotation* and *Raw rotation* and the button *Reset rotation range*. The limits s
 at -75 and 75 and are widened automatically when a larger rotation is measured. The
 button restores the limits.
 
-## Services
+## Actions
 
 ### `wms_webcontrol_pro.set_cover_position_and_tilt`
 
 Moves a slat drive and its tilt to the target values with one request, so the two
 movements do not cancel each other. Fields: `position` and `tilt_position`, both 0 to 100.
 
-## Polling
+## Data updates
+
 
 The gateway is a radio gateway, every status request puts traffic on the radio channel.
 One coordinator per gateway therefore asks each destination only rarely (every 30
@@ -91,6 +131,69 @@ three times in a 30 seconds interval.
 The library counts the results per destination and logs a warning only if a destination
 stays silent for a long time. The counters are part of the diagnostics download. The
 host is redacted in the diagnostics.
+
+## Examples
+
+Move a blind and tilt its slats with one request, so the tilt does not cancel the movement:
+
+```yaml
+actions:
+  - action: wms_webcontrol_pro.set_cover_position_and_tilt
+    target:
+      entity_id: cover.living_room_blind
+    data:
+      position: 60
+      tilt_position: 30
+```
+
+Retract an awning when the wind picks up:
+
+```yaml
+triggers:
+  - trigger: numeric_state
+    entity_id: sensor.wind_speed
+    above: 40
+actions:
+  - action: cover.close_cover
+    target:
+      entity_id: cover.awning
+```
+
+## Known limitations
+
+- The gateway reports no position while a drive is running. Changes that are made
+  outside Home Assistant, for example with a wall transmitter, are noticed with the
+  next status request, the regular request is made every 30 minutes.
+- The radio channel can be busy. The integration then skips the request instead of
+  repeating it, the position is checked again after the next command or the next
+  regular request.
+- Without travel times the position of a moving cover is not shown. The target position
+  is shown at once.
+- Only one Home Assistant integration should control a gateway. Do not set up the gateway
+  with this integration and with the core integration `wmspro` at the same time.
+- Components are found when the integration is loaded. Reload the integration after you
+  change the configuration of the gateway.
+
+## Troubleshooting
+
+- **Setup fails with "Failed to connect":** check the host name or IP address and that
+  the gateway is reachable from Home Assistant. Open `http://<host>/control` in a browser.
+- **A cover shows the wrong position:** enter the travel times of the drive. The next status
+  request corrects the position. A cover that moved on its own
+  is asked again up to three times.
+- **A destination is unavailable:** the gateway reports no data for it, for example when
+  the component is out of radio range. The diagnostics show how often each destination
+  answered, was busy or failed.
+- **Download the diagnostics** in *Settings, Devices & services* with *Download
+  diagnostics* when you report a problem. The host is redacted.
+- **Debug logs:** add this to `configuration.yaml` and restart:
+
+  ```yaml
+  logger:
+    logs:
+      custom_components.wms_webcontrol_pro: debug
+      pywmswebcontrolpro: debug
+  ```
 
 ## Stored data
 
