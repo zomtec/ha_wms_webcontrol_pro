@@ -25,9 +25,40 @@
     }
   },
   "entity": {
+    "button": {
+      "rotation-reset": {
+        "name": "Drehbereich zurücksetzen"
+      }
+    },
     "cover": {
       "valance": {
         "name": "Volant"
+      }
+    },
+    "number": {
+      "rotation": {
+        "name": "Drehung"
+      },
+      "rotation-max": {
+        "name": "Maximale Drehung"
+      },
+      "rotation-min": {
+        "name": "Minimale Drehung"
+      },
+      "rotation-raw": {
+        "name": "Rohwert der Drehung"
+      },
+      "travel-time-open": {
+        "name": "Öffnungszeit"
+      },
+      "travel-time-close": {
+        "name": "Schließzeit"
+      },
+      "valance-travel-time-open": {
+        "name": "Volant Öffnungszeit"
+      },
+      "valance-travel-time-close": {
+        "name": "Volant Schließzeit"
       }
     }
   },

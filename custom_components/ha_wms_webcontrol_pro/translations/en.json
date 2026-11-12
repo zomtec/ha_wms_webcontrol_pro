@@ -25,9 +25,40 @@
     }
   },
   "entity": {
+    "button": {
+      "rotation-reset": {
+        "name": "Reset rotation range"
+      }
+    },
     "cover": {
       "valance": {
         "name": "Valance"
+      }
+    },
+    "number": {
+      "rotation": {
+        "name": "Rotation"
+      },
+      "rotation-max": {
+        "name": "Maximum rotation"
+      },
+      "rotation-min": {
+        "name": "Minimum rotation"
+      },
+      "rotation-raw": {
+        "name": "Raw rotation"
+      },
+      "travel-time-open": {
+        "name": "Opening time"
+      },
+      "travel-time-close": {
+        "name": "Closing time"
+      },
+      "valance-travel-time-open": {
+        "name": "Valance opening time"
+      },
+      "valance-travel-time-close": {
+        "name": "Valance closing time"
       }
     }
   },

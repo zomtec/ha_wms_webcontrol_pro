@@ -21,3 +21,5 @@ MAX_FOLLOW_UP_POLLS = 3
 # How often the calculated position of a running drive is written.
 TRAVEL_UPDATE_INTERVAL = timedelta(seconds=1)
 ATTR_POSITION_SOURCE = "position_source"
+# Seconds until the status is requested after a rotation command.
+SETTLE_ROTATION = 5.0
