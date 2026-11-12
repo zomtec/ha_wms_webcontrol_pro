@@ -46,9 +46,8 @@ calculation, and the gateway cannot deliver the state reliably enough to do it d
 Both integrations can be installed at the same time, but only one of them should control
 a gateway.
 
-> **Status:** not released yet. The integration is complete, but it has only been tested
-> with a simulated gateway, not with a real one. The library has to be published on PyPI
-> before the integration can be installed.
+> **Status:** the integration is complete, but it has only been tested with a simulated
+> gateway, not with a real one. Use it with care until this note is removed.
 
 ## Requirements
 
