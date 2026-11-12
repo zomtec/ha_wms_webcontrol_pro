@@ -65,11 +65,11 @@
   "services": {
     "set_cover_position_and_tilt": {
       "name": "Position und Neigung setzen",
-      "description": "Fährt den Behang und die Lamellen gleichzeitig auf die Zielwerte, damit sich die einzelnen Bewegungen nicht gegenseitig abbrechen.",
+      "description": "Fährt die Position und die Lamellenneigung gleichzeitig auf die Zielwerte, damit sich die einzelnen Bewegungen nicht gegenseitig abbrechen.",
       "fields": {
         "position": {
           "name": "Position",
-          "description": "Zielposition des Behangs. 0 bedeutet geschlossen, 100 vollständig geöffnet."
+          "description": "Zielposition. 0 bedeutet geschlossen, 100 vollständig geöffnet."
         },
         "tilt_position": {
           "name": "Neigung",
