@@ -114,7 +114,7 @@ class WebControlProCoordinator(DataUpdateCoordinator[dict[int, RefreshOutcome]])
 
         The regular interval keeps running, it is not reset by this request.
         """
-        outcome = await self.hub.dests[dest_id].refresh(retries=0)
+        outcome: RefreshOutcome = await self.hub.dests[dest_id].refresh(retries=0)
         self.data = {**(self.data or {}), dest_id: outcome}
         self.async_update_listeners()
         return outcome
