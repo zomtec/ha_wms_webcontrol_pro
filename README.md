@@ -100,7 +100,7 @@ directory is removed when the config entry is removed.
 
 ## Origin and license
 
-The integration is derived from the [`wmspro` integration](https://github.com/home-assistant/core/tree/dev/homeassistant/components/wmspro) of Home Assistant Core by
+The integration is derived from the [`wmspro`](https://github.com/home-assistant/core/tree/dev/homeassistant/components/wmspro) integration of Home Assistant Core by
 Marc Hoersken and licensed under the Apache License 2.0, see [LICENSE](LICENSE).
 
 ## Development
