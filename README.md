@@ -27,6 +27,13 @@ is a continuation of it with a different focus:
   therefore comes from the commands that Home Assistant sent. Changes made with a wall
   transmitter or another app are not noticed reliably.
 
+The last two points are the reason why these changes would most likely not be accepted
+in the core integration. They contradict a principle of Home Assistant: the controlled
+device determines its current state and Home Assistant only takes it over. That way the
+state is always correct, even when a device is controlled from several sources. This
+integration works the other way round, the shown state comes from the commands and the
+calculation, and the gateway cannot deliver the state reliably enough to do it differently.
+
 Both integrations can be installed at the same time, but only one of them should control
 a gateway.
 
