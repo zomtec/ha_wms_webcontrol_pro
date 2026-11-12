@@ -2,9 +2,8 @@
 
 [![License](https://img.shields.io/github/license/zomtec/ha_wms_webcontrol_pro)](https://github.com/zomtec/ha_wms_webcontrol_pro/blob/main/LICENSE)
 [![Release](https://img.shields.io/github/v/release/zomtec/ha_wms_webcontrol_pro)](https://github.com/zomtec/ha_wms_webcontrol_pro/releases)
-[![Validate](https://img.shields.io/github/actions/workflow/status/zomtec/ha_wms_webcontrol_pro/validate.yml?branch=main&label=validate)](https://github.com/zomtec/ha_wms_webcontrol_pro/actions/workflows/validate.yml)
-[![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz)
-[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.10%2B-18bcf2.svg)](https://www.home-assistant.io)
+[![Commit activity](https://img.shields.io/github/commit-activity/y/zomtec/ha_wms_webcontrol_pro?style=flat-square)](https://github.com/zomtec/ha_wms_webcontrol_pro/commits)
+[![Home Assistant Marketplace](https://img.shields.io/badge/Home%20Assistant-Marketplace-41BDF5?style=flat-square)](https://www.home-assistant.io/integrations/marketplace/)
 
 Custom integration (HACS) for the [Warema](https://www.warema.com) WMS WebControl pro
 gateway. The gateway connects the WMS radio system of Warema (awnings, roller shutters,
