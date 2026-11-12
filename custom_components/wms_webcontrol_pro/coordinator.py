@@ -99,6 +99,7 @@ class WebControlProCoordinator(DataUpdateCoordinator[dict[int, RefreshOutcome]])
         self._configuration_warned = False
         for dest_id in changes.removed:
             self.async_cancel_refresh(dest_id)
+        self._async_rename_devices(changes.renamed)
         self._async_configuration_read()
 
     async def _async_hub_answers(self) -> bool:
@@ -120,6 +121,23 @@ class WebControlProCoordinator(DataUpdateCoordinator[dict[int, RefreshOutcome]])
             self.hub.host,
             err,
         )
+
+    @callback
+    def _async_rename_devices(self, dest_ids: frozenset[int]) -> None:
+        """Take over the names of destinations that were renamed on the hub.
+
+        Only the default name of the device changes. A name given in Home
+        Assistant and the entity ids stay as they are.
+        """
+        registry = dr.async_get(self.hass)
+        for dest_id in dest_ids:
+            device = registry.async_get_device_by_identifier(
+                (DOMAIN, str(dest_id)), self.config_entry.entry_id
+            )
+            if device is not None:
+                registry.async_update_device(
+                    device.id, name=self.hub.dests[dest_id].name
+                )
 
     @callback
     def _async_configuration_read(self) -> None:

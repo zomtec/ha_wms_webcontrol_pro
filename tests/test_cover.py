@@ -152,6 +152,45 @@ async def test_slat_cover_shows_the_measured_tilt(
     assert cover.attributes[ATTR_CURRENT_TILT_POSITION] == 50
 
 
+@pytest.mark.parametrize("gateway", [SLAT_SETUP], indirect=True)
+@pytest.mark.usefixtures("clock")
+async def test_status_without_position_updates_the_tilt(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, gateway: FakeGateway
+) -> None:
+    """A status with the rotation only changes the tilt and keeps the position."""
+    assert await setup_config_entry(hass, mock_config_entry)
+    before = hass.states.get(SLAT)
+    assert before is not None
+    data = mock_config_entry.runtime_data
+    tilt_action = data.hub.dests[SLAT_ID].action(ACTION_DESC.SlatRotate)
+    gateway.queue_status(
+        SLAT_ID,
+        {
+            "details": [
+                {
+                    "destinationId": SLAT_ID,
+                    "data": {
+                        "productData": [
+                            {"actionId": tilt_action.id, "value": {"rotation": -75}}
+                        ]
+                    },
+                }
+            ]
+        },
+    )
+
+    await data.coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+    cover = hass.states.get(SLAT)
+    assert cover is not None
+    assert cover.attributes[ATTR_CURRENT_TILT_POSITION] == 100
+    assert (
+        cover.attributes[ATTR_CURRENT_POSITION]
+        == before.attributes[ATTR_CURRENT_POSITION]
+    )
+
+
 @pytest.mark.parametrize("gateway", [ROLLER_SETUP], indirect=True)
 @pytest.mark.parametrize(
     ("service", "data", "percentage"),
