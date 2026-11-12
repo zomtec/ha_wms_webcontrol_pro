@@ -1,4 +1,4 @@
-# WMS WebControl pro for Home Assistant
+# WMS WebControl Pro for Home Assistant
 
 [![License](https://img.shields.io/github/license/zomtec/ha_wms_webcontrol_pro)](https://github.com/zomtec/ha_wms_webcontrol_pro/blob/main/LICENSE)
 [![Release](https://img.shields.io/github/v/release/zomtec/ha_wms_webcontrol_pro)](https://github.com/zomtec/ha_wms_webcontrol_pro/releases)
@@ -6,7 +6,7 @@
 [![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz)
 [![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.10%2B-18bcf2.svg)](https://www.home-assistant.io)
 
-Custom integration (HACS) for the [Warema](https://www.warema.com) WMS WebControl pro
+Custom integration (HACS) for the [Warema](https://www.warema.com) WMS WebControl Pro
 gateway. The gateway connects the WMS radio system of Warema (awnings, roller shutters,
 blinds, lights and other components) to the network. This integration controls these
 components from Home Assistant through the local API of the gateway, without a cloud.
@@ -50,7 +50,7 @@ a gateway.
 ## Requirements
 
 - Home Assistant 2026.10.0 or newer.
-- A WMS WebControl pro reachable from Home Assistant by host name or IP address.
+- A WMS WebControl Pro reachable from Home Assistant by host name or IP address.
 - The domain is `wms_webcontrol_pro`. It can be installed next to the core
   integration [`wmspro`](https://github.com/home-assistant/core/tree/dev/homeassistant/components/wmspro), but both must never control the same gateway at the same time.
 
@@ -88,7 +88,7 @@ repository first. On Home Assistant 2026.10, which has no Marketplace yet, use
 
 1. Click the button above, or add `https://github.com/zomtec/ha_wms_webcontrol_pro` as a
    custom repository of type *Integration*.
-2. Search for *WMS WebControl pro*, choose *Download* and confirm.
+2. Search for *WMS WebControl Pro*, choose *Download* and confirm.
 3. Restart Home Assistant if asked.
 4. Continue with [Set up the integration](#set-up-the-integration).
 
@@ -105,7 +105,7 @@ Assistant.
 [![Open your Home Assistant instance and start setting up the integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=wms_webcontrol_pro)
 
 1. Click the button above, or go to *Settings, Devices & services, Add integration* and
-   search for *WMS WebControl pro*.
+   search for *WMS WebControl Pro*.
 2. Enter the host name or IP address of the gateway. The setup checks that the gateway
    answers.
 3. Finish the dialog. The gateway and its components appear as devices.
@@ -114,7 +114,7 @@ Assistant.
 
 | Parameter | Description |
 | --- | --- |
-| Host | Host name or IP address of the WMS WebControl pro, `webcontrol` is suggested. |
+| Host | Host name or IP address of the WMS WebControl Pro, `webcontrol` is suggested. |
 
 A gateway that is set up once cannot be set up a second time. The integration has no
 options, all settings (travel times, rotation limits) are number entities.
@@ -128,7 +128,7 @@ stays as it is.
 
 ### Removal
 
-1. Go to *Settings, Devices & services*, open *WMS WebControl pro* and choose *Delete*
+1. Go to *Settings, Devices & services*, open *WMS WebControl Pro* and choose *Delete*
    in the menu of the entry. The devices and entities are removed and the stored data
    (see [Stored data](#stored-data)) is deleted.
 2. Remove the integration in the Marketplace (or HACS) if it is not needed any more.
@@ -162,7 +162,7 @@ Without travel times the target position is shown at once and checked later. Set
 travel times for a smooth position display and for the opening and closing states.
 
 Covers with tilt (slat drive with rotation) support the tilt position. Opening or
-closing such a cover also moves the slats like the WMS WebControl pro does.
+closing such a cover also moves the slats like the WMS WebControl Pro does.
 
 ### Travel times
 
