@@ -17,7 +17,7 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import (
     AiohttpClientMocker,
 )
 
-from custom_components.ha_wms_webcontrol_pro.const import DOMAIN
+from custom_components.wms_webcontrol_pro.const import DOMAIN
 
 from .conftest import COMMAND_URL, HOST, FakeGateway
 from .helpers import setup_config_entry

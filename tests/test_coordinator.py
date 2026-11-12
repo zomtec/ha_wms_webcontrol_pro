@@ -10,7 +10,7 @@ from pytest_homeassistant_custom_component.common import (
     async_fire_time_changed,
 )
 
-from custom_components.ha_wms_webcontrol_pro.const import BASE_POLL_INTERVAL
+from custom_components.wms_webcontrol_pro.const import BASE_POLL_INTERVAL
 from pywmswebcontrolpro.refresh import RefreshResult
 from pywmswebcontrolpro.travel import CoverModel
 

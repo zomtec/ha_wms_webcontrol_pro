@@ -29,7 +29,7 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import (
     AiohttpClientMocker,
 )
 
-from custom_components.ha_wms_webcontrol_pro.const import (
+from custom_components.wms_webcontrol_pro.const import (
     ATTR_POSITION_SOURCE,
     DOMAIN,
     FOLLOW_UP_POLL_DELAY,
@@ -72,7 +72,7 @@ class FakeClock:
 def clock(monkeypatch: pytest.MonkeyPatch) -> FakeClock:
     """Control the time of the calculated drives."""
     fake = FakeClock()
-    monkeypatch.setattr("custom_components.ha_wms_webcontrol_pro.cover.monotonic", fake)
+    monkeypatch.setattr("custom_components.wms_webcontrol_pro.cover.monotonic", fake)
     return fake
 
 

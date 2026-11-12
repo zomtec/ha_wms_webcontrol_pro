@@ -6,9 +6,7 @@ from pathlib import Path
 
 import pytest
 
-INTEGRATION_DIR = (
-    Path(__file__).parents[1] / "custom_components" / "ha_wms_webcontrol_pro"
-)
+INTEGRATION_DIR = Path(__file__).parents[1] / "custom_components" / "wms_webcontrol_pro"
 STRINGS = json.loads((INTEGRATION_DIR / "strings.json").read_text(encoding="utf-8"))
 TRANSLATION_FILES = sorted((INTEGRATION_DIR / "translations").glob("*.json"))
 PLACEHOLDER = re.compile(r"\{[a-z_]+\}")

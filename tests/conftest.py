@@ -13,7 +13,7 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import (
     AiohttpClientMockResponse,
 )
 
-from custom_components.ha_wms_webcontrol_pro.const import DOMAIN
+from custom_components.wms_webcontrol_pro.const import DOMAIN
 
 FIXTURES = Path(__file__).parent / "fixtures"
 HOST = "webcontrol"
@@ -72,7 +72,7 @@ def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
 def no_request_spacing(monkeypatch: pytest.MonkeyPatch) -> None:
     """Do not wait between status requests in tests."""
     monkeypatch.setattr(
-        "custom_components.ha_wms_webcontrol_pro.STATUS_REQUEST_SPACING", 0
+        "custom_components.wms_webcontrol_pro.STATUS_REQUEST_SPACING", 0
     )
 
 

@@ -2,7 +2,7 @@
 
 from datetime import timedelta
 
-DOMAIN = "ha_wms_webcontrol_pro"
+DOMAIN = "wms_webcontrol_pro"
 SUGGESTED_HOST = "webcontrol"
 
 ATTRIBUTION = "Data provided by WMS WebControl pro API"
