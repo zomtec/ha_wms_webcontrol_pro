@@ -287,3 +287,7 @@ python -m pytest
 
 The version in `manifest.json` stays `0.0.0`, the release workflow writes the tag of
 the GitHub release into it. The manifest pins the exact version of the library.
+
+## Acknowledgments
+
+This integration was created with substantial assistance from Claude, an AI assistant by Anthropic.
