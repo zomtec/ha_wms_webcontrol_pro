@@ -12,7 +12,7 @@ lives in the library, the integration only maps it to Home Assistant entities.
 ## Why this integration exists next to the core integration
 
 Home Assistant Core has an integration for the same gateway, `wmspro`. This integration
-is a continuation of it with a different focus and its own release cycle:
+is a continuation of it with a different focus:
 
 - **Less radio traffic.** The core integration asks every component for its status every
   10 to 15 seconds. This integration asks rarely and once after each command, see
@@ -20,11 +20,12 @@ is a continuation of it with a different focus and its own release cycle:
 - **A position while the cover moves.** The gateway reports no position during a drive.
   This integration calculates it from configurable travel times, also for the valance
   of an awning.
-- **Settings and learned values live in the library.** Travel times, rotation limits and
-  the last known state are stored by the library `pywmswebcontrolpro`, not in the
-  entities.
-- **Changes without the Home Assistant release cycle.** Fixes and workarounds for the
-  gateway can be released as soon as they are ready.
+- **Devices are controlled only through Home Assistant.** The integration assumes that
+  the Warema WMS devices are controlled exclusively through Home Assistant. The state is
+  read back from the gateway only very rarely, because a status request (`getStatus`)
+  often fails with an error, see [Known limitations](#known-limitations). The shown state
+  therefore comes from the commands that Home Assistant sent. Changes made with a wall
+  transmitter or another app are not noticed reliably.
 
 Both integrations can be installed at the same time, but only one of them should control
 a gateway.
