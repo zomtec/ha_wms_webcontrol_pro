@@ -16,18 +16,18 @@
       "unknown": "Unerwarteter Fehler"
     },
     "abort": {
-      "already_configured": "Das Gerät ist bereits konfiguriert"
+      "already_configured": "Dieser WMS WebControl pro ist bereits eingerichtet."
     }
   },
   "exceptions": {
     "cannot_connect": {
-      "message": "Keine Verbindung zum WMS WebControl pro unter {host} möglich."
+      "message": "Es konnte keine Verbindung zum WMS WebControl pro unter {host} hergestellt werden."
     }
   },
   "entity": {
     "button": {
       "rotation-reset": {
-        "name": "Drehbereich zurücksetzen"
+        "name": "Lamellenbereich zurücksetzen"
       }
     },
     "cover": {
@@ -37,43 +37,43 @@
     },
     "number": {
       "rotation": {
-        "name": "Drehung"
+        "name": "Lamellendrehung"
       },
       "rotation-max": {
-        "name": "Maximale Drehung"
+        "name": "Maximale Lamellendrehung"
       },
       "rotation-min": {
-        "name": "Minimale Drehung"
+        "name": "Minimale Lamellendrehung"
       },
       "rotation-raw": {
-        "name": "Rohwert der Drehung"
+        "name": "Lamellendrehung (Rohwert)"
       },
       "travel-time-open": {
-        "name": "Öffnungszeit"
+        "name": "Laufzeit beim Öffnen"
       },
       "travel-time-close": {
-        "name": "Schließzeit"
+        "name": "Laufzeit beim Schließen"
       },
       "valance-travel-time-open": {
-        "name": "Volant Öffnungszeit"
+        "name": "Volant: Laufzeit beim Öffnen"
       },
       "valance-travel-time-close": {
-        "name": "Volant Schließzeit"
+        "name": "Volant: Laufzeit beim Schließen"
       }
     }
   },
   "services": {
     "set_cover_position_and_tilt": {
       "name": "Position und Neigung setzen",
-      "description": "Fährt Behang und Neigung gleichzeitig auf die Zielposition, damit sich die einzelnen Bewegungen nicht gegenseitig abbrechen.",
+      "description": "Fährt den Behang und die Lamellen gleichzeitig auf die Zielwerte, damit sich die einzelnen Bewegungen nicht gegenseitig abbrechen.",
       "fields": {
         "position": {
           "name": "Position",
-          "description": "Zielposition. 0 bedeutet geschlossen, 100 vollständig geöffnet."
+          "description": "Zielposition des Behangs. 0 bedeutet geschlossen, 100 vollständig geöffnet."
         },
         "tilt_position": {
           "name": "Neigung",
-          "description": "Zielneigung."
+          "description": "Zielneigung der Lamellen."
         }
       }
     }
