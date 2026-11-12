@@ -1,0 +1,14 @@
+{
+  "domain": "ha_wms_webcontrol_pro",
+  "name": "WMS WebControl pro",
+  "codeowners": ["@zomtec"],
+  "config_flow": true,
+  "dhcp": [{ "macaddress": "0023D5*" }, { "registered_devices": true }],
+  "documentation": "https://github.com/zomtec/ha_wms_webcontrol_pro/blob/main/README.md",
+  "integration_type": "hub",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/zomtec/ha_wms_webcontrol_pro/issues",
+  "loggers": ["pywmswebcontrolpro"],
+  "requirements": ["pywmswebcontrolpro==0.1.0"],
+  "version": "0.0.0"
+}
