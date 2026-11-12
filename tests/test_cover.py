@@ -311,8 +311,10 @@ async def test_unreachable_hub_raises_an_error(
     aioclient_mock.clear_requests()
     aioclient_mock.post(COMMAND_URL, exc=TimeoutError)
 
-    with pytest.raises(HomeAssistantError):
+    with pytest.raises(HomeAssistantError) as error:
         await _call(hass, SERVICE_OPEN_COVER, ROLLER)
+
+    assert error.value.translation_key == "command_failed"
 
 
 @pytest.mark.parametrize("gateway", [ROLLER_SETUP], indirect=True)

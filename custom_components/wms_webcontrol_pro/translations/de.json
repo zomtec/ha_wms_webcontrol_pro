@@ -8,20 +8,33 @@
         "data_description": {
           "host": "Der Hostname oder die IP-Adresse deines WMS WebControl pro."
         }
+      },
+      "reconfigure": {
+        "data": {
+          "host": "Host"
+        },
+        "data_description": {
+          "host": "Der Hostname oder die IP-Adresse deines WMS WebControl pro."
+        }
       }
     },
     "flow_title": "{host}",
     "error": {
       "cannot_connect": "Verbindung fehlgeschlagen",
-      "unknown": "Unerwarteter Fehler"
+      "unknown": "Unerwarteter Fehler",
+      "wrong_device": "Das ist nicht derselbe WMS WebControl pro wie zuvor."
     },
     "abort": {
-      "already_configured": "Dieser WMS WebControl pro ist bereits eingerichtet."
+      "already_configured": "Dieser WMS WebControl pro ist bereits eingerichtet.",
+      "reconfigure_successful": "Die Neukonfiguration war erfolgreich."
     }
   },
   "exceptions": {
     "cannot_connect": {
       "message": "Es konnte keine Verbindung zum WMS WebControl pro unter {host} hergestellt werden."
+    },
+    "command_failed": {
+      "message": "Der Befehl an {name} konnte nicht gesendet werden: {error}"
     }
   },
   "entity": {

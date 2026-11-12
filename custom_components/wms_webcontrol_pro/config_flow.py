@@ -9,6 +9,7 @@ import probatio
 from homeassistant.config_entries import (
     SOURCE_DHCP,
     SOURCE_IGNORE,
+    ConfigEntryState,
     ConfigFlow,
     ConfigFlowResult,
 )
@@ -101,6 +102,49 @@ class WebControlProConfigFlow(ConfigFlow, domain=DOMAIN):
         )
         return self.async_show_form(
             step_id="user", data_schema=data_schema, errors=errors
+        )
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Handle a change of the host of the hub."""
+        entry = self._get_reconfigure_entry()
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            host = user_input[CONF_HOST]
+            if any(
+                other.entry_id != entry.entry_id and other.data[CONF_HOST] == host
+                for other in self.hass.config_entries.async_entries(DOMAIN)
+            ):
+                return self.async_abort(reason="already_configured")
+            hub = WebControlPro(host, async_get_clientsession(self.hass))
+            try:
+                pong = await hub.ping()
+                if pong:
+                    await hub.refresh()
+            except aiohttp.ClientError, TimeoutError:
+                errors["base"] = "cannot_connect"
+            except Exception:
+                _LOGGER.exception("Unexpected exception")
+                errors["base"] = "unknown"
+            else:
+                if not pong:
+                    errors["base"] = "cannot_connect"
+                elif entry.state is ConfigEntryState.LOADED and set(hub.rooms) != set(
+                    entry.runtime_data.hub.rooms
+                ):
+                    errors["base"] = "wrong_device"
+                else:
+                    return self.async_update_reload_and_abort(
+                        entry, data_updates={CONF_HOST: host}
+                    )
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=self.add_suggested_values_to_schema(
+                STEP_USER_DATA_SCHEMA, {CONF_HOST: entry.data[CONF_HOST]}
+            ),
+            errors=errors,
         )
 
     def _is_configured_hub(self, rooms: set[int]) -> bool:

@@ -222,6 +222,7 @@ class WebControlProSlatRotationRaw(WebControlProSlatRotation):
     """Representation of the WMS based raw slat-rotation for a slat-based cover."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
     _attr_translation_key = "rotation-raw"
 
     @property

@@ -34,6 +34,7 @@ from pywmswebcontrolpro.travel import CoverModel, wms_percentage_to_position
 
 from .const import (
     ATTR_POSITION_SOURCE,
+    DOMAIN,
     FOLLOW_UP_POLL_DELAY,
     MAX_FOLLOW_UP_POLLS,
     TRAVEL_UPDATE_INTERVAL,
@@ -247,7 +248,9 @@ class WebControlProCover(WebControlProEntity, CoverEntity):
             response = await action_list(responseType=response_type)
         except (aiohttp.ClientError, TimeoutError) as err:
             raise HomeAssistantError(
-                f"Error sending command to {self._dest}: {err!r}"
+                translation_domain=DOMAIN,
+                translation_key="command_failed",
+                translation_placeholders={"name": str(self._dest), "error": repr(err)},
             ) from err
 
         errors = response.get("errors") if isinstance(response, dict) else None
