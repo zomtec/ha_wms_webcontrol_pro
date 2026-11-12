@@ -20,7 +20,7 @@ from pywmswebcontrolpro.store import TravelDirection
 
 from .const import SETTLE_ROTATION
 from .coordinator import WebControlProConfigEntry, WebControlProCoordinator
-from .entity import WebControlProEntity
+from .entity import WebControlProEntity, async_setup_destination_entities
 
 PARALLEL_UPDATES = 1
 
@@ -42,25 +42,27 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the numbers of a hub."""
-    coordinator = entry.runtime_data.coordinator
+    async_setup_destination_entities(entry, async_add_entities, _entities)
 
-    entities: list[WebControlProEntity] = []
-    for dest in entry.runtime_data.hub.dests.values():
-        entities.extend(
-            WebControlProTravelTime(coordinator, dest, drive, prefix, direction)
-            for drive, prefix in TRAVEL_TIME_DRIVES
-            if dest.hasAction(drive)
-            for direction in TravelDirection
-        )
-        if dest.hasAction(ACTION_DESC.SlatRotate):
-            entities.append(WebControlProSlatRangeMin(coordinator, dest))
-            entities.append(WebControlProSlatRangeMax(coordinator, dest))
-            entities.append(WebControlProSlatRotationRaw(coordinator, dest))
-            if not dest.hasAction(ACTION_DESC.SlatDrive):
-                # Only add the numeric slat rotation if no cover entity exists.
-                entities.append(WebControlProSlatRotation(coordinator, dest))
 
-    async_add_entities(entities)
+def _entities(
+    coordinator: WebControlProCoordinator, dest: Destination
+) -> list[WebControlProEntity]:
+    """Return the numbers of a destination."""
+    entities: list[WebControlProEntity] = [
+        WebControlProTravelTime(coordinator, dest, drive, prefix, direction)
+        for drive, prefix in TRAVEL_TIME_DRIVES
+        if dest.hasAction(drive)
+        for direction in TravelDirection
+    ]
+    if dest.hasAction(ACTION_DESC.SlatRotate):
+        entities.append(WebControlProSlatRangeMin(coordinator, dest))
+        entities.append(WebControlProSlatRangeMax(coordinator, dest))
+        entities.append(WebControlProSlatRotationRaw(coordinator, dest))
+        if not dest.hasAction(ACTION_DESC.SlatDrive):
+            # Only add the numeric slat rotation if no cover entity exists.
+            entities.append(WebControlProSlatRotation(coordinator, dest))
+    return entities
 
 
 class WebControlProTravelTime(WebControlProEntity, NumberEntity):

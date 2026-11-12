@@ -10,10 +10,11 @@ from pywmswebcontrolpro.const import (
     WMS_WebControl_pro_API_actionDescription as ACTION_DESC,
     WMS_WebControl_pro_API_responseType,
 )
+from pywmswebcontrolpro.destination import Destination
 
 from .const import SETTLE_SWITCH
-from .coordinator import WebControlProConfigEntry
-from .entity import WebControlProEntity
+from .coordinator import WebControlProConfigEntry, WebControlProCoordinator
+from .entity import WebControlProEntity, async_setup_destination_entities
 
 PARALLEL_UPDATES = 1
 
@@ -24,13 +25,16 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the switches of a hub."""
-    coordinator = entry.runtime_data.coordinator
+    async_setup_destination_entities(entry, async_add_entities, _entities)
 
-    async_add_entities(
-        WebControlProSwitch(coordinator, dest)
-        for dest in entry.runtime_data.hub.dests.values()
-        if dest.hasAction(ACTION_DESC.LoadSwitch)
-    )
+
+def _entities(
+    coordinator: WebControlProCoordinator, dest: Destination
+) -> list[WebControlProSwitch]:
+    """Return the switches of a destination."""
+    if dest.hasAction(ACTION_DESC.LoadSwitch):
+        return [WebControlProSwitch(coordinator, dest)]
+    return []
 
 
 class WebControlProSwitch(WebControlProEntity, SwitchEntity):

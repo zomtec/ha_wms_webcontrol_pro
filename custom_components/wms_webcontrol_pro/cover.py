@@ -40,7 +40,7 @@ from .const import (
     TRAVEL_UPDATE_INTERVAL,
 )
 from .coordinator import WebControlProConfigEntry, WebControlProCoordinator
-from .entity import WebControlProEntity
+from .entity import WebControlProEntity, async_setup_destination_entities
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -68,23 +68,26 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the covers of a hub."""
-    coordinator = entry.runtime_data.coordinator
+    async_setup_destination_entities(entry, async_add_entities, _entities)
 
+
+def _entities(
+    coordinator: WebControlProCoordinator, dest: Destination
+) -> list[WebControlProCover]:
+    """Return the covers of a destination."""
     entities: list[WebControlProCover] = []
-    for dest in entry.runtime_data.hub.dests.values():
-        if dest.hasAction(ACTION_DESC.AwningDrive):
-            entities.append(WebControlProAwning(coordinator, dest))
-            if dest.hasAction(ACTION_DESC.ValanceDrive):
-                entities.append(WebControlProValance(coordinator, dest))
-        elif dest.hasAction(ACTION_DESC.RollerShutterBlindDrive):
-            entities.append(WebControlProRollerShutter(coordinator, dest))
-        elif dest.hasAction(ACTION_DESC.SlatDrive):
-            if dest.hasAction(ACTION_DESC.SlatRotate):
-                entities.append(WebControlProSlatRotate(coordinator, dest))
-            else:
-                entities.append(WebControlProSlat(coordinator, dest))
-
-    async_add_entities(entities)
+    if dest.hasAction(ACTION_DESC.AwningDrive):
+        entities.append(WebControlProAwning(coordinator, dest))
+        if dest.hasAction(ACTION_DESC.ValanceDrive):
+            entities.append(WebControlProValance(coordinator, dest))
+    elif dest.hasAction(ACTION_DESC.RollerShutterBlindDrive):
+        entities.append(WebControlProRollerShutter(coordinator, dest))
+    elif dest.hasAction(ACTION_DESC.SlatDrive):
+        if dest.hasAction(ACTION_DESC.SlatRotate):
+            entities.append(WebControlProSlatRotate(coordinator, dest))
+        else:
+            entities.append(WebControlProSlat(coordinator, dest))
+    return entities
 
 
 class WebControlProCover(WebControlProEntity, CoverEntity):

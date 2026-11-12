@@ -14,7 +14,7 @@ from pywmswebcontrolpro.const import (
 from pywmswebcontrolpro.destination import Destination
 
 from .coordinator import WebControlProConfigEntry, WebControlProCoordinator
-from .entity import WebControlProEntity
+from .entity import WebControlProEntity, async_setup_destination_entities
 
 PARALLEL_UPDATES = 1
 
@@ -25,16 +25,19 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the buttons of a hub."""
-    coordinator = entry.runtime_data.coordinator
+    async_setup_destination_entities(entry, async_add_entities, _entities)
 
+
+def _entities(
+    coordinator: WebControlProCoordinator, dest: Destination
+) -> list[WebControlProEntity]:
+    """Return the buttons of a destination."""
     entities: list[WebControlProEntity] = []
-    for dest in entry.runtime_data.hub.dests.values():
-        if dest.hasAction(ACTION_DESC.Identify):
-            entities.append(WebControlProIdentifyButton(coordinator, dest))
-        if dest.hasAction(ACTION_DESC.SlatRotate):
-            entities.append(WebControlProRotationResetButton(coordinator, dest))
-
-    async_add_entities(entities)
+    if dest.hasAction(ACTION_DESC.Identify):
+        entities.append(WebControlProIdentifyButton(coordinator, dest))
+    if dest.hasAction(ACTION_DESC.SlatRotate):
+        entities.append(WebControlProRotationResetButton(coordinator, dest))
+    return entities
 
 
 class WebControlProIdentifyButton(WebControlProEntity, ButtonEntity):
