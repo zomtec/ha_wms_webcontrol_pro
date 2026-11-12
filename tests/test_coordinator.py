@@ -80,11 +80,11 @@ async def test_scheduled_refresh_asks_only_one_destination(
 
     coordinator.async_schedule_refresh(DEST_ID, 5)
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=4))
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
     assert not gateway.commands
 
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=6))
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
 
     assert [c["destinations"] for c in gateway.commands_named("getStatus")] == [
         [DEST_ID]
@@ -102,11 +102,11 @@ async def test_new_schedule_replaces_the_pending_one(
     coordinator.async_schedule_refresh(DEST_ID, 2)
     coordinator.async_schedule_refresh(DEST_ID, 5)
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=3))
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
     assert not gateway.commands
 
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=6))
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
 
     assert len(gateway.commands_named("getStatus")) == 1
 
@@ -173,6 +173,6 @@ async def test_pending_refresh_is_cancelled_on_unload(
 
     assert await unload_config_entry(hass, mock_config_entry)
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=10))
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
 
     assert not gateway.commands

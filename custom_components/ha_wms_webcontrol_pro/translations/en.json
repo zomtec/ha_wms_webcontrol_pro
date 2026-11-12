@@ -23,5 +23,28 @@
     "cannot_connect": {
       "message": "Cannot connect to the WMS WebControl pro at {host}."
     }
+  },
+  "entity": {
+    "cover": {
+      "valance": {
+        "name": "Valance"
+      }
+    }
+  },
+  "services": {
+    "set_cover_position_and_tilt": {
+      "name": "Set cover position and tilt",
+      "description": "Moves the cover and tilt to the target position simultaneously, preventing cancellation of individual movements.",
+      "fields": {
+        "position": {
+          "name": "Position",
+          "description": "Target vertical position. 0 means closed, 100 means fully open."
+        },
+        "tilt_position": {
+          "name": "Tilt position",
+          "description": "Target tilt position."
+        }
+      }
+    }
   }
 }

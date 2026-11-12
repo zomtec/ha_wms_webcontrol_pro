@@ -23,5 +23,28 @@
     "cannot_connect": {
       "message": "Keine Verbindung zum WMS WebControl pro unter {host} möglich."
     }
+  },
+  "entity": {
+    "cover": {
+      "valance": {
+        "name": "Volant"
+      }
+    }
+  },
+  "services": {
+    "set_cover_position_and_tilt": {
+      "name": "Position und Neigung setzen",
+      "description": "Fährt Behang und Neigung gleichzeitig auf die Zielposition, damit sich die einzelnen Bewegungen nicht gegenseitig abbrechen.",
+      "fields": {
+        "position": {
+          "name": "Position",
+          "description": "Zielposition. 0 bedeutet geschlossen, 100 vollständig geöffnet."
+        },
+        "tilt_position": {
+          "name": "Neigung",
+          "description": "Zielneigung."
+        }
+      }
+    }
   }
 }

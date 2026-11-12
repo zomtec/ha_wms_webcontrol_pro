@@ -20,8 +20,9 @@ from .coordinator import (
     WebControlProCoordinator,
     WebControlProData,
 )
+from .services import async_setup_services
 
-PLATFORMS: list[Platform] = []
+PLATFORMS: list[Platform] = [Platform.COVER]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
@@ -33,6 +34,7 @@ def _storage_dir(hass: HomeAssistant, entry: WebControlProConfigEntry) -> Path:
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the integration."""
+    async_setup_services(hass)
     return True
 
 
