@@ -20,7 +20,7 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import (
 from custom_components.wms_webcontrol_pro.const import DOMAIN
 
 from .conftest import COMMAND_URL, HOST, FakeGateway, load_fixture_object
-from .helpers import setup_config_entry
+from .helpers import setup_config_entry, unload_config_entry
 
 NEW_HOST = "1.2.3.4"
 MAC = "001122334455"
@@ -294,7 +294,7 @@ async def test_reconfigure_rejects_a_hub_that_does_not_answer_the_ping(
 async def test_reconfigure_rejects_another_hub(
     hass: HomeAssistant, mock_config_entry: MockConfigEntry, gateway: FakeGateway
 ) -> None:
-    """A hub with other rooms is not the hub of the entry."""
+    """A hub with other destinations and rooms is not the hub of the entry."""
     assert await setup_config_entry(hass, mock_config_entry)
     result = await mock_config_entry.start_reconfigure_flow(hass)
     gateway.config = load_fixture_object("config_prod_slat_rotate.json")
@@ -322,3 +322,47 @@ async def test_reconfigure_aborts_for_a_host_of_another_entry(
 
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
+
+
+async def test_reconfigure_rejects_another_hub_while_the_entry_is_not_loaded(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, gateway: FakeGateway
+) -> None:
+    """The devices of the entry tell the hub apart, also after a failed setup."""
+    assert await setup_config_entry(hass, mock_config_entry)
+    assert await unload_config_entry(hass, mock_config_entry)
+    result = await mock_config_entry.start_reconfigure_flow(hass)
+    gateway.config = load_fixture_object("config_prod_slat_rotate.json")
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_HOST: NEW_HOST}
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "wrong_device"}
+    assert mock_config_entry.data[CONF_HOST] == HOST
+
+
+async def test_user_flow_accepts_a_second_hub_and_rejects_a_known_one(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, gateway: FakeGateway
+) -> None:
+    """A hub is known by its destinations, also while its entry is not loaded."""
+    assert await setup_config_entry(hass, mock_config_entry)
+    assert await unload_config_entry(hass, mock_config_entry)
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_HOST: NEW_HOST}
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+
+    gateway.config = load_fixture_object("config_prod_slat_rotate.json")
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_HOST: NEW_HOST}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY

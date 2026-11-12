@@ -1,11 +1,9 @@
 """Covers of the WMS WebControl pro integration."""
 
-import logging
 from datetime import datetime
 from time import monotonic
 from typing import Any, override
 
-import aiohttp
 from homeassistant.components.cover import (
     ATTR_POSITION,
     ATTR_TILT_POSITION,
@@ -17,10 +15,6 @@ from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.event import async_track_time_interval
-from homeassistant.util.percentage import (
-    percentage_to_ranged_value,
-    ranged_value_to_percentage,
-)
 
 from pywmswebcontrolpro.action import ActionList
 from pywmswebcontrolpro.const import (
@@ -34,15 +28,12 @@ from pywmswebcontrolpro.travel import CoverModel, wms_percentage_to_position
 
 from .const import (
     ATTR_POSITION_SOURCE,
-    DOMAIN,
     FOLLOW_UP_POLL_DELAY,
     MAX_FOLLOW_UP_POLLS,
     TRAVEL_UPDATE_INTERVAL,
 )
 from .coordinator import WebControlProConfigEntry, WebControlProCoordinator
 from .entity import WebControlProEntity, async_setup_destination_entities
-
-_LOGGER = logging.getLogger(__name__)
 
 PARALLEL_UPDATES = 1
 
@@ -98,16 +89,20 @@ class WebControlProCover(WebControlProEntity, CoverEntity):
     """
 
     _drive_action_desc: ACTION_DESC
-    _attr_name = None
+    # Tells a second cover of a destination apart in the unique id.
+    _unique_key: str | None = None
     _attr_supported_features = BASE_FEATURES
+    _attr_translation_key = "cover"
     _unrecorded_attributes = frozenset({ATTR_POSITION_SOURCE})
 
     def __init__(
         self, coordinator: WebControlProCoordinator, dest: Destination
     ) -> None:
         """Initialize the cover."""
-        super().__init__(coordinator, dest, self.translation_key)
+        super().__init__(coordinator, dest, self._unique_key)
         self._action = dest.action(self._drive_action_desc)
+        # Each drive of a destination asks for the status on its own.
+        self._refresh_key = str(self._action.id)
         self._model: CoverModel = self._action.model
         self._last_outcome: RefreshOutcome | None = None
         self._unsub_tick: CALLBACK_TYPE | None = None
@@ -198,7 +193,7 @@ class WebControlProCover(WebControlProEntity, CoverEntity):
             # The cover moved without a command of this integration or is
             # still moving. Ask again until two results match.
             self._follow_ups += 1
-            self.coordinator.async_schedule_refresh(self._dest.id, FOLLOW_UP_POLL_DELAY)
+            self._schedule_refresh(FOLLOW_UP_POLL_DELAY)
         else:
             self._follow_ups = 0
 
@@ -239,57 +234,39 @@ class WebControlProCover(WebControlProEntity, CoverEntity):
 
     # --- Commands ---
 
+    @callback
+    def _schedule_refresh(self, delay: float) -> None:
+        """Ask for the status of the destination once after a delay."""
+        self.coordinator.async_schedule_refresh(self._dest.id, delay, self._refresh_key)
+
     async def _async_send(
         self,
         action_list: ActionList,
         response_type: WMS_WebControl_pro_API_responseType = (
             WMS_WebControl_pro_API_responseType.Instant
         ),
-    ) -> bool:
-        """Send a command to the hub, return True if the hub accepted it."""
+    ) -> None:
+        """Send a command to the hub, check the real state if that failed."""
         try:
-            response = await action_list(responseType=response_type)
-        except (aiohttp.ClientError, TimeoutError) as err:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN,
-                translation_key="command_failed",
-                translation_placeholders={"name": str(self._dest), "error": repr(err)},
-            ) from err
-
-        errors = response.get("errors") if isinstance(response, dict) else None
-        if errors:
-            _LOGGER.warning(
-                "Hub rejected command for %s (%s): %s",
-                self._dest,
-                self._dest.id,
-                errors,
-            )
-            return False
-        return True
+            await self._async_command(action_list(responseType=response_type))
+        except HomeAssistantError:
+            if not self._model.is_travelling:
+                self._schedule_refresh(self._model.settings.settle_unknown_travel)
+            raise
 
     async def _async_after_command(self, delay: float) -> None:
         """Store the state, update timers and write the state."""
         self._follow_ups = 0
         self._sync_ticker()
         await self._action.sync()
-        self.coordinator.async_schedule_refresh(self._dest.id, delay)
-        self.async_write_ha_state()
-
-    def _async_after_rejected(self) -> None:
-        """Check the real state after a rejected command."""
-        if not self._model.is_travelling:
-            self.coordinator.async_schedule_refresh(
-                self._dest.id, self._model.settings.settle_unknown_travel
-            )
+        self._schedule_refresh(delay)
         self.async_write_ha_state()
 
     async def _async_move(
         self, action_list: ActionList, position: int, tilt: int | None = None
     ) -> None:
         """Send a drive command and start the calculated drive."""
-        if not await self._async_send(action_list):
-            self._async_after_rejected()
-            return
+        await self._async_send(action_list)
         delay = self._action.start_move(monotonic(), position, tilt)
         await self._async_after_command(delay)
 
@@ -316,11 +293,9 @@ class WebControlProCover(WebControlProEntity, CoverEntity):
             ACTION_DESC.ManualCommand,
             WMS_WebControl_pro_API_actionType.Stop,
         )
-        if not await self._async_send(
+        await self._async_send(
             action.prep(), WMS_WebControl_pro_API_responseType.Detailed
-        ):
-            self._async_after_rejected()
-            return
+        )
         await self._async_after_command(self._model.stop(monotonic()))
 
 
@@ -328,6 +303,7 @@ class WebControlProAwning(WebControlProCover):
     """Representation of a WMS based awning."""
 
     _attr_device_class = CoverDeviceClass.AWNING
+    _attr_name = None
     _drive_action_desc = ACTION_DESC.AwningDrive
 
 
@@ -336,6 +312,7 @@ class WebControlProValance(WebControlProCover):
 
     _attr_device_class = CoverDeviceClass.SHADE
     _attr_translation_key = "valance"
+    _unique_key = "valance"
     _drive_action_desc = ACTION_DESC.ValanceDrive
 
 
@@ -343,6 +320,7 @@ class WebControlProRollerShutter(WebControlProCover):
     """Representation of a WMS based roller shutter or blind."""
 
     _attr_device_class = CoverDeviceClass.SHUTTER
+    _attr_name = None
     _drive_action_desc = ACTION_DESC.RollerShutterBlindDrive
 
 
@@ -350,6 +328,7 @@ class WebControlProSlat(WebControlProCover):
     """Representation of a WMS based blind using a slat drive."""
 
     _attr_device_class = CoverDeviceClass.BLIND
+    _attr_name = None
     _drive_action_desc = ACTION_DESC.SlatDrive
 
 
@@ -366,21 +345,6 @@ class WebControlProSlatRotate(WebControlProSlat):
         super().__init__(coordinator, dest)
         self._tilt_action = dest.action(self._tilt_action_desc)
 
-    def _rotation_to_tilt(self, rotation: float) -> int:
-        """Convert a WMS rotation to a tilt position (0 closed, 100 open)."""
-        action = self._tilt_action
-        tilt = 100 - ranged_value_to_percentage(
-            (action.minValue, action.maxValue), rotation
-        )
-        return max(0, min(100, tilt))
-
-    def _tilt_to_rotation(self, tilt: int) -> float:
-        """Convert a tilt position (0 closed, 100 open) to a WMS rotation."""
-        action = self._tilt_action
-        return percentage_to_ranged_value(
-            (action.minValue, action.maxValue), 100 - tilt
-        )
-
     @override
     def _measured_tilt(self, outcome: RefreshOutcome) -> int | None:
         """Return the tilt contained in a status result."""
@@ -388,7 +352,7 @@ class WebControlProSlatRotate(WebControlProSlat):
         rotation = value.get("rotation") if value else None
         if isinstance(rotation, bool) or not isinstance(rotation, (int, float)):
             return None
-        return self._rotation_to_tilt(rotation)
+        return self._tilt_action.rotation_to_tilt(rotation)
 
     @property
     @override
@@ -400,19 +364,19 @@ class WebControlProSlatRotate(WebControlProSlat):
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open the cover and tilt to minimum like the WMS WebControl pro."""
         action_list = self._action.prep(percentage=0)
-        action_list += self._tilt_action.prep(rotation=self._tilt_action.minValue)
-        await self._async_move(
-            action_list, 100, self._rotation_to_tilt(self._tilt_action.minValue)
+        action_list += self._tilt_action.prep(
+            rotation=self._tilt_action.tilt_to_rotation(100)
         )
+        await self._async_move(action_list, 100, 100)
 
     @override
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close the cover and tilt to maximum like the WMS WebControl pro."""
         action_list = self._action.prep(percentage=100)
-        action_list += self._tilt_action.prep(rotation=self._tilt_action.maxValue)
-        await self._async_move(
-            action_list, 0, self._rotation_to_tilt(self._tilt_action.maxValue)
+        action_list += self._tilt_action.prep(
+            rotation=self._tilt_action.tilt_to_rotation(0)
         )
+        await self._async_move(action_list, 0, 0)
 
     @override
     async def async_set_cover_position(self, **kwargs: Any) -> None:
@@ -427,16 +391,14 @@ class WebControlProSlatRotate(WebControlProSlat):
 
     async def _async_tilt(self, rotation: float, tilt: int) -> None:
         """Send a tilt-only command, it ends a running drive."""
-        if not await self._async_send(self._tilt_action.prep(rotation=rotation)):
-            self._async_after_rejected()
-            return
+        await self._async_send(self._tilt_action.prep(rotation=rotation))
         await self._async_after_command(self._model.set_tilt(monotonic(), tilt))
 
     @override
     async def async_set_cover_tilt_position(self, **kwargs: Any) -> None:
         """Set the cover tilt position."""
         tilt = kwargs[ATTR_TILT_POSITION]
-        await self._async_tilt(self._tilt_to_rotation(tilt), tilt)
+        await self._async_tilt(self._tilt_action.tilt_to_rotation(tilt), tilt)
 
     @override
     async def async_open_cover_tilt(self, **kwargs: Any) -> None:
@@ -445,7 +407,7 @@ class WebControlProSlatRotate(WebControlProSlat):
         # with the open position the slat is parallel to the ground.
         # This position will let the most light through and
         # is required to fully store the cover in the box.
-        await self._async_tilt(0, self._rotation_to_tilt(0))
+        await self._async_tilt(0, self._tilt_action.rotation_to_tilt(0))
 
     @override
     async def async_close_cover_tilt(self, **kwargs: Any) -> None:
@@ -453,13 +415,14 @@ class WebControlProSlatRotate(WebControlProSlat):
         # maxValue is the close position for the tilt in WMS WebControl pro,
         # with the close position the slat is perpendicular to the ground.
         # This position will block the light best.
-        rotation = self._tilt_action.maxValue
-        await self._async_tilt(rotation, self._rotation_to_tilt(rotation))
+        await self._async_tilt(self._tilt_action.tilt_to_rotation(0), 0)
 
     async def async_set_cover_position_and_tilt(self, **kwargs: Any) -> None:
         """Handle the service action call to set cover position and tilt."""
         position = kwargs[ATTR_POSITION]
         tilt = kwargs[ATTR_TILT_POSITION]
         action_list = self._action.prep(percentage=100 - position)
-        action_list += self._tilt_action.prep(rotation=self._tilt_to_rotation(tilt))
+        action_list += self._tilt_action.prep(
+            rotation=self._tilt_action.tilt_to_rotation(tilt)
+        )
         await self._async_move(action_list, position, tilt)

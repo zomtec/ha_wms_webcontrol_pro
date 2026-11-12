@@ -4,23 +4,25 @@ import ipaddress
 import logging
 from typing import Any, override
 
-import aiohttp
 import probatio
 from homeassistant.config_entries import (
     SOURCE_DHCP,
     SOURCE_IGNORE,
-    ConfigEntryState,
+    ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
 )
 from homeassistant.const import CONF_HOST
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 
+from pywmswebcontrolpro.exceptions import WebControlProError
 from pywmswebcontrolpro.webcontrol import WebControlPro
 
 from .const import DOMAIN, SUGGESTED_HOST
+from .coordinator import room_identifier
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -77,7 +79,7 @@ class WebControlProConfigFlow(ConfigFlow, domain=DOMAIN):
                 pong = await hub.ping()
                 if pong:
                     await hub.refresh()
-            except aiohttp.ClientError, TimeoutError:
+            except WebControlProError:
                 errors["base"] = "cannot_connect"
             except Exception:
                 _LOGGER.exception("Unexpected exception")
@@ -85,7 +87,7 @@ class WebControlProConfigFlow(ConfigFlow, domain=DOMAIN):
             else:
                 if not pong:
                     errors["base"] = "cannot_connect"
-                elif self._is_configured_hub(set(hub.rooms)):
+                elif self._is_configured_hub(hub):
                     return self.async_abort(reason="already_configured")
                 else:
                     return self.async_create_entry(title=host, data=user_input)
@@ -122,7 +124,7 @@ class WebControlProConfigFlow(ConfigFlow, domain=DOMAIN):
                 pong = await hub.ping()
                 if pong:
                     await hub.refresh()
-            except aiohttp.ClientError, TimeoutError:
+            except WebControlProError:
                 errors["base"] = "cannot_connect"
             except Exception:
                 _LOGGER.exception("Unexpected exception")
@@ -130,9 +132,7 @@ class WebControlProConfigFlow(ConfigFlow, domain=DOMAIN):
             else:
                 if not pong:
                     errors["base"] = "cannot_connect"
-                elif entry.state is ConfigEntryState.LOADED and set(hub.rooms) != set(
-                    entry.runtime_data.hub.rooms
-                ):
+                elif self._is_other_hub(entry, hub):
                     errors["base"] = "wrong_device"
                 else:
                     return self.async_update_reload_and_abort(
@@ -147,9 +147,38 @@ class WebControlProConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    def _is_configured_hub(self, rooms: set[int]) -> bool:
-        """Return True if a loaded entry belongs to a hub with the same rooms."""
+    def _entry_identifiers(self, entry: ConfigEntry) -> set[str]:
+        """Return the identifiers of the destinations and rooms of an entry.
+
+        The hub has no serial number in its API. The devices that an entry
+        created are known without a connection and even if it is not loaded.
+        """
+        return {
+            identifier
+            for device in dr.async_entries_for_config_entry(
+                dr.async_get(self.hass), entry.entry_id
+            )
+            for domain, identifier in device.identifiers
+            if domain == DOMAIN and identifier != entry.entry_id
+        }
+
+    @staticmethod
+    def _hub_identifiers(hub: WebControlPro) -> set[str]:
+        """Return the identifiers of the destinations and rooms of a hub."""
+        return {
+            *(str(dest_id) for dest_id in hub.dests),
+            *(room_identifier(room_id) for room_id in hub.rooms),
+        }
+
+    def _is_configured_hub(self, hub: WebControlPro) -> bool:
+        """Return True if an entry already has a destination or room of the hub."""
+        identifiers = self._hub_identifiers(hub)
         return any(
-            entry.runtime_data and set(entry.runtime_data.hub.rooms) == rooms
-            for entry in self.hass.config_entries.async_loaded_entries(DOMAIN)
+            not identifiers.isdisjoint(self._entry_identifiers(entry))
+            for entry in self.hass.config_entries.async_entries(DOMAIN)
         )
+
+    def _is_other_hub(self, entry: ConfigEntry, hub: WebControlPro) -> bool:
+        """Return True if the hub has nothing in common with the entry."""
+        known = self._entry_identifiers(entry)
+        return bool(known) and known.isdisjoint(self._hub_identifiers(hub))

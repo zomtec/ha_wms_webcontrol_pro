@@ -34,7 +34,10 @@
       "message": "Es konnte keine Verbindung zum WMS WebControl pro unter {host} hergestellt werden."
     },
     "command_failed": {
-      "message": "Der Befehl an {name} konnte nicht gesendet werden: {error}"
+      "message": "Der WMS WebControl pro hat auf den Befehl für {name} nicht geantwortet."
+    },
+    "command_rejected": {
+      "message": "Der WMS WebControl pro hat den Befehl für {name} abgelehnt, zum Beispiel weil der Funkkanal belegt ist. Der Befehl wurde nicht erneut gesendet."
     }
   },
   "entity": {
@@ -44,8 +47,30 @@
       }
     },
     "cover": {
+      "cover": {
+        "state_attributes": {
+          "position_source": {
+            "name": "Herkunft der Position",
+            "state": {
+              "calculated": "Berechnet",
+              "measured": "Gemessen",
+              "restored": "Wiederhergestellt"
+            }
+          }
+        }
+      },
       "valance": {
-        "name": "Volant"
+        "name": "Volant",
+        "state_attributes": {
+          "position_source": {
+            "name": "Herkunft der Position",
+            "state": {
+              "calculated": "Berechnet",
+              "measured": "Gemessen",
+              "restored": "Wiederhergestellt"
+            }
+          }
+        }
       }
     },
     "number": {

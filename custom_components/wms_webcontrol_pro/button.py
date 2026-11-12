@@ -48,7 +48,7 @@ class WebControlProIdentifyButton(WebControlProEntity, ButtonEntity):
     @override
     async def async_press(self) -> None:
         """Handle the button press to identify the device."""
-        await self._dest.action(ACTION_DESC.Identify)()
+        await self._async_command(self._dest.action(ACTION_DESC.Identify)())
 
 
 class WebControlProRotationResetButton(WebControlProEntity, ButtonEntity):
@@ -65,10 +65,6 @@ class WebControlProRotationResetButton(WebControlProEntity, ButtonEntity):
 
     @override
     async def async_press(self) -> None:
-        """Reset the rotation range to the default."""
-        action = self._dest.action(ACTION_DESC.SlatRotate)
-        # Deleting the overwrites restores the range of the hub.
-        del action["minValue"]
-        del action["maxValue"]
-        await action.sync()
+        """Reset the rotation range to the default of the library."""
+        await self._dest.action(ACTION_DESC.SlatRotate).reset_rotation_range()
         self.coordinator.async_update_listeners()

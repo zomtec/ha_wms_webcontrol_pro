@@ -10,6 +10,6 @@
   "issue_tracker": "https://github.com/zomtec/ha_wms_webcontrol_pro/issues",
   "loggers": ["pywmswebcontrolpro"],
   "quality_scale": "platinum",
-  "requirements": ["pywmswebcontrolpro==0.1.2"],
+  "requirements": ["pywmswebcontrolpro==0.2.0"],
   "version": "0.0.0"
 }

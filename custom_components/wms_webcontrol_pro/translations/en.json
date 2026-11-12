@@ -25,7 +25,7 @@
       "wrong_device": "This is not the same WMS WebControl pro as before."
     },
     "abort": {
-      "already_configured": "Device is already configured",
+      "already_configured": "This WMS WebControl pro is already configured.",
       "reconfigure_successful": "Reconfiguration was successful"
     }
   },
@@ -34,7 +34,10 @@
       "message": "Cannot connect to the WMS WebControl pro at {host}."
     },
     "command_failed": {
-      "message": "Failed to send a command to {name}: {error}"
+      "message": "The WMS WebControl pro did not answer the command for {name}."
+    },
+    "command_rejected": {
+      "message": "The WMS WebControl pro rejected the command for {name}, for example because the radio channel is busy. The command was not sent again."
     }
   },
   "entity": {
@@ -44,8 +47,30 @@
       }
     },
     "cover": {
+      "cover": {
+        "state_attributes": {
+          "position_source": {
+            "name": "Position source",
+            "state": {
+              "calculated": "Calculated",
+              "measured": "Measured",
+              "restored": "Restored"
+            }
+          }
+        }
+      },
       "valance": {
-        "name": "Valance"
+        "name": "Valance",
+        "state_attributes": {
+          "position_source": {
+            "name": "Position source",
+            "state": {
+              "calculated": "Calculated",
+              "measured": "Measured",
+              "restored": "Restored"
+            }
+          }
+        }
       }
     },
     "number": {
