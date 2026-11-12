@@ -16,12 +16,66 @@
       "unknown": "Unerwarteter Fehler"
     },
     "abort": {
-      "already_configured": "Das Gerät ist bereits konfiguriert"
+      "already_configured": "Dieser WMS WebControl pro ist bereits eingerichtet."
     }
   },
   "exceptions": {
     "cannot_connect": {
-      "message": "Keine Verbindung zum WMS WebControl pro unter {host} möglich."
+      "message": "Es konnte keine Verbindung zum WMS WebControl pro unter {host} hergestellt werden."
+    }
+  },
+  "entity": {
+    "button": {
+      "rotation-reset": {
+        "name": "Lamellenbereich zurücksetzen"
+      }
+    },
+    "cover": {
+      "valance": {
+        "name": "Volant"
+      }
+    },
+    "number": {
+      "rotation": {
+        "name": "Lamellendrehung"
+      },
+      "rotation-max": {
+        "name": "Maximale Lamellendrehung"
+      },
+      "rotation-min": {
+        "name": "Minimale Lamellendrehung"
+      },
+      "rotation-raw": {
+        "name": "Lamellendrehung (Rohwert)"
+      },
+      "travel-time-open": {
+        "name": "Laufzeit beim Öffnen"
+      },
+      "travel-time-close": {
+        "name": "Laufzeit beim Schließen"
+      },
+      "valance-travel-time-open": {
+        "name": "Volant: Laufzeit beim Öffnen"
+      },
+      "valance-travel-time-close": {
+        "name": "Volant: Laufzeit beim Schließen"
+      }
+    }
+  },
+  "services": {
+    "set_cover_position_and_tilt": {
+      "name": "Position und Neigung setzen",
+      "description": "Fährt die Position und die Lamellenneigung gleichzeitig auf die Zielwerte, damit sich die einzelnen Bewegungen nicht gegenseitig abbrechen.",
+      "fields": {
+        "position": {
+          "name": "Position",
+          "description": "Zielposition. 0 bedeutet geschlossen, 100 vollständig geöffnet."
+        },
+        "tilt_position": {
+          "name": "Neigung",
+          "description": "Zielneigung der Lamellen."
+        }
+      }
     }
   }
 }

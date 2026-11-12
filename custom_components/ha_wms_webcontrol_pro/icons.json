@@ -1,0 +1,37 @@
+{
+  "entity": {
+    "button": {
+      "rotation-reset": {
+        "default": "mdi:numeric-0-box-multiple-outline"
+      }
+    },
+    "number": {
+      "rotation": {
+        "default": "mdi:rotate-360"
+      },
+      "rotation-max": {
+        "default": "mdi:rotate-right"
+      },
+      "rotation-min": {
+        "default": "mdi:rotate-left"
+      },
+      "travel-time-open": {
+        "default": "mdi:timer-sand"
+      },
+      "travel-time-close": {
+        "default": "mdi:timer-sand"
+      },
+      "valance-travel-time-open": {
+        "default": "mdi:timer-sand"
+      },
+      "valance-travel-time-close": {
+        "default": "mdi:timer-sand"
+      }
+    }
+  },
+  "services": {
+    "set_cover_position_and_tilt": {
+      "service": "mdi:blinds-horizontal"
+    }
+  }
+}
