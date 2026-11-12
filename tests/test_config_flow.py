@@ -269,6 +269,7 @@ async def test_reconfigure_shows_an_error_and_recovers(
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], {CONF_HOST: NEW_HOST}
     )
+    await hass.async_block_till_done()
 
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
