@@ -23,3 +23,7 @@ TRAVEL_UPDATE_INTERVAL = timedelta(seconds=1)
 ATTR_POSITION_SOURCE = "position_source"
 # Seconds until the status is requested after a rotation command.
 SETTLE_ROTATION = 5.0
+
+BRIGHTNESS_SCALE = (1, 100)
+# Seconds until the status is requested after a light or switch command.
+SETTLE_SWITCH = 2.0

@@ -22,7 +22,14 @@ from .coordinator import (
 )
 from .services import async_setup_services
 
-PLATFORMS: list[Platform] = [Platform.BUTTON, Platform.COVER, Platform.NUMBER]
+PLATFORMS: list[Platform] = [
+    Platform.BUTTON,
+    Platform.COVER,
+    Platform.LIGHT,
+    Platform.NUMBER,
+    Platform.SCENE,
+    Platform.SWITCH,
+]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
