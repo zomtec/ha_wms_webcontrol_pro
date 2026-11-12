@@ -77,34 +77,61 @@ a component gets is described in [Entities](#entities).
 
 ## Installation
 
+### Marketplace
+
+The integration is installed from the Home Assistant Marketplace (formerly HACS). It is
+not part of the default catalog yet, so the repository has to be added as a custom
+repository first. On Home Assistant 2026.10, which has no Marketplace yet, use
+[HACS](https://hacs.xyz).
+
 [![Open your Home Assistant instance and open this repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=zomtec&repository=ha_wms_webcontrol_pro&category=integration)
+
+1. Click the button above, or add `https://github.com/zomtec/ha_wms_webcontrol_pro` as a
+   custom repository of type *Integration*.
+2. Search for *WMS WebControl pro*, choose *Download* and confirm.
+3. Restart Home Assistant if asked.
+4. Continue with [Set up the integration](#set-up-the-integration).
+
+Updates appear under *Settings, Updates*.
+
+### Manual installation
+
+Copy the folder `custom_components/wms_webcontrol_pro` of this repository into the
+`custom_components` folder of your Home Assistant configuration and restart Home
+Assistant.
+
+## Set up the integration
 
 [![Open your Home Assistant instance and start setting up the integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=wms_webcontrol_pro)
 
-The first button adds this repository to HACS, the second one starts the setup of the
-integration after it was downloaded and Home Assistant was restarted. Or do it by hand:
-
-1. Add this repository as a custom repository of type *Integration* in HACS.
-2. Download the integration and restart Home Assistant.
-3. Go to *Settings, Devices & services, Add integration* and search for
-   *WMS WebControl pro*. Enter the host name or IP address of the gateway. A gateway
-   announced by DHCP is offered for setup automatically.
+1. Click the button above, or go to *Settings, Devices & services, Add integration* and
+   search for *WMS WebControl pro*.
+2. Enter the host name or IP address of the gateway. The setup checks that the gateway
+   answers.
+3. Finish the dialog. The gateway and its components appear as devices.
 
 ### Installation parameters
 
 | Parameter | Description |
 | --- | --- |
-| Host | Host name or IP address of the WMS WebControl pro. The setup checks that the gateway answers. |
+| Host | Host name or IP address of the WMS WebControl pro, `webcontrol` is suggested. |
 
 A gateway that is set up once cannot be set up a second time. The integration has no
 options, all settings (travel times, rotation limits) are number entities.
+
+### Discovery
+
+A gateway is found by DHCP (MAC address prefix `0023D5`) and shown as *Discovered* in
+*Settings, Devices & services*. Choose *Add* to set it up. If the gateway is already set
+up with an IP address and gets a new one, the host of the entry is updated. A host name
+stays as it is.
 
 ### Removal
 
 1. Go to *Settings, Devices & services*, open *WMS WebControl pro* and choose *Delete*
    in the menu of the entry. The devices and entities are removed and the stored data
    (see [Stored data](#stored-data)) is deleted.
-2. Remove the integration in HACS if it is not needed any more.
+2. Remove the integration in the Marketplace (or HACS) if it is not needed any more.
 
 ## Entities
 
