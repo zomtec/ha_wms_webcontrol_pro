@@ -121,6 +121,9 @@ Assistant.
 A gateway that is set up once cannot be set up a second time. The integration has no
 options, all settings (travel times, rotation limits) are number entities.
 
+To change the host later, use *Reconfigure* in the menu of the entry. The setup refuses
+a gateway that has other rooms than the one of the entry.
+
 ### Discovery
 
 A gateway is found by DHCP (MAC address prefix `0023D5`) and shown as *Discovered* in
@@ -179,6 +182,8 @@ The slat drives with rotation have the number entities *Minimum rotation*, *Maxi
 rotation* and *Raw rotation* and the button *Reset rotation range*. The limits start
 at -75 and 75 and are widened automatically when a larger rotation is measured. The
 button restores the limits.
+*Raw rotation* is a diagnostic value and disabled by default, enable it in the entity
+settings if you need it.
 
 ## Actions
 

@@ -19,7 +19,7 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import (
 
 from custom_components.wms_webcontrol_pro.const import DOMAIN
 
-from .conftest import COMMAND_URL, HOST, FakeGateway
+from .conftest import COMMAND_URL, HOST, FakeGateway, load_fixture_object
 from .helpers import setup_config_entry
 
 NEW_HOST = "1.2.3.4"
@@ -213,3 +213,112 @@ async def test_dhcp_discovery_keeps_name_based_and_ignored_entries(
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
     assert entry.data[CONF_HOST] == host
+
+
+async def test_reconfigure_changes_the_host(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, gateway: FakeGateway
+) -> None:
+    """A new host of the same hub is stored and the entry is reloaded."""
+    assert await setup_config_entry(hass, mock_config_entry)
+
+    result = await mock_config_entry.start_reconfigure_flow(hass)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reconfigure"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_HOST: NEW_HOST}
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert mock_config_entry.data[CONF_HOST] == NEW_HOST
+    assert mock_config_entry.state is ConfigEntryState.LOADED
+
+
+@pytest.mark.parametrize(
+    ("error", "expected"),
+    [
+        (aiohttp.ClientError, "cannot_connect"),
+        (RuntimeError, "unknown"),
+    ],
+)
+async def test_reconfigure_shows_an_error_and_recovers(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    gateway: FakeGateway,
+    aioclient_mock: AiohttpClientMocker,
+    error: type[Exception],
+    expected: str,
+) -> None:
+    """An error is shown on the form and a new attempt can succeed."""
+    assert await setup_config_entry(hass, mock_config_entry)
+    result = await mock_config_entry.start_reconfigure_flow(hass)
+    aioclient_mock.clear_requests()
+    aioclient_mock.post(COMMAND_URL, exc=error)
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_HOST: NEW_HOST}
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": expected}
+
+    aioclient_mock.clear_requests()
+    aioclient_mock.post(COMMAND_URL, side_effect=gateway.handle)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_HOST: NEW_HOST}
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+
+
+async def test_reconfigure_rejects_a_hub_that_does_not_answer_the_ping(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, gateway: FakeGateway
+) -> None:
+    """A hub that reports an error for the ping is not usable."""
+    assert await setup_config_entry(hass, mock_config_entry)
+    result = await mock_config_entry.start_reconfigure_flow(hass)
+    gateway.ping_status = 1
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_HOST: NEW_HOST}
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "cannot_connect"}
+
+
+async def test_reconfigure_rejects_another_hub(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, gateway: FakeGateway
+) -> None:
+    """A hub with other rooms is not the hub of the entry."""
+    assert await setup_config_entry(hass, mock_config_entry)
+    result = await mock_config_entry.start_reconfigure_flow(hass)
+    gateway.config = load_fixture_object("config_prod_slat_rotate.json")
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_HOST: NEW_HOST}
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "wrong_device"}
+    assert mock_config_entry.data[CONF_HOST] == HOST
+
+
+async def test_reconfigure_aborts_for_a_host_of_another_entry(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, gateway: FakeGateway
+) -> None:
+    """The host of another entry cannot be used."""
+    MockConfigEntry(domain=DOMAIN, data={CONF_HOST: NEW_HOST}).add_to_hass(hass)
+    mock_config_entry.add_to_hass(hass)
+    result = await mock_config_entry.start_reconfigure_flow(hass)
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_HOST: NEW_HOST}
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"

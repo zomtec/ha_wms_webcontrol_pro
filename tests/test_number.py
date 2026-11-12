@@ -132,10 +132,32 @@ async def test_slat_range_numbers_default_and_reset(
 
 
 @pytest.mark.parametrize("gateway", [SLAT_SETUP], indirect=True)
+async def test_rotation_raw_is_disabled_by_default(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, gateway: FakeGateway
+) -> None:
+    """The raw rotation is a diagnostic value that has to be enabled."""
+    assert await setup_config_entry(hass, mock_config_entry)
+
+    entry = er.async_get(hass).async_get(
+        _entity_id(hass, NUMBER_DOMAIN, f"{SLAT_ID}-rotation-raw")
+    )
+
+    assert entry is not None
+    assert entry.disabled_by is er.RegistryEntryDisabler.INTEGRATION
+
+
+@pytest.mark.parametrize("gateway", [SLAT_SETUP], indirect=True)
 async def test_rotation_raw_sends_the_rotation_and_requests_the_state(
     hass: HomeAssistant, mock_config_entry: MockConfigEntry, gateway: FakeGateway
 ) -> None:
     """The raw rotation is a command of the hub, the result is checked after."""
+    mock_config_entry.add_to_hass(hass)
+    er.async_get(hass).async_get_or_create(
+        NUMBER_DOMAIN,
+        "wms_webcontrol_pro",
+        f"{SLAT_ID}-rotation-raw",
+        config_entry=mock_config_entry,
+    )
     assert await setup_config_entry(hass, mock_config_entry)
     raw = _entity_id(hass, NUMBER_DOMAIN, f"{SLAT_ID}-rotation-raw")
     gateway.commands.clear()
