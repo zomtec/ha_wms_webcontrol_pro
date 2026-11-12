@@ -16,7 +16,7 @@ lives in the library, the integration only maps it to Home Assistant entities.
 - Home Assistant 2026.10.0 or newer.
 - A WMS WebControl pro reachable from Home Assistant by host name or IP address.
 - The domain is `wms_webcontrol_pro`. It can be installed next to the core
-  integration `wmspro`, but both must never control the same gateway at the same time.
+  integration [`wmspro`](https://github.com/home-assistant/core/tree/dev/homeassistant/components/wmspro), but both must never control the same gateway at the same time.
 
 ## Installation
 
@@ -100,7 +100,7 @@ directory is removed when the config entry is removed.
 
 ## Origin and license
 
-The integration is derived from the `wmspro` integration of Home Assistant Core by
+The integration is derived from the [`wmspro` integration](https://github.com/home-assistant/core/tree/dev/homeassistant/components/wmspro) of Home Assistant Core by
 Marc Hoersken and licensed under the Apache License 2.0, see [LICENSE](LICENSE).
 
 ## Development
