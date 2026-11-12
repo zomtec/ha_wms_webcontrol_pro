@@ -166,7 +166,7 @@ class WebControlProCover(WebControlProEntity, CoverEntity):
 
     @callback
     def _take_measurement(self) -> None:
-        """Take over a new measured position while the cover stands still."""
+        """Take over a new measured position or tilt while the cover stands still."""
         outcome = self.coordinator.data.get(self._dest.id)
         if outcome is None or outcome is self._last_outcome:
             return
@@ -179,13 +179,13 @@ class WebControlProCover(WebControlProEntity, CoverEntity):
         position = (
             wms_percentage_to_position(value.get("percentage")) if value else None
         )
-        if position is None:
+        tilt = self._measured_tilt(outcome)
+        if position is None and tilt is None:
             self._follow_ups = 0
             return
 
-        result = self._action.apply_measurement(
-            monotonic(), position, self._measured_tilt(outcome)
-        )
+        # A status can contain the tilt without the position, it is used too.
+        result = self._action.apply_measurement(monotonic(), position, tilt)
         self._sync_ticker()
         if not result.applied:
             return

@@ -144,3 +144,68 @@ async def test_device_can_only_be_deleted_when_the_hub_does_not_report_it(
 
     assert not await async_remove_config_entry_device(hass, mock_config_entry, present)
     assert await async_remove_config_entry_device(hass, mock_config_entry, stale)
+
+
+async def test_destination_that_is_renamed_renames_its_device(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    gateway: FakeGateway,
+    device_registry: dr.DeviceRegistry,
+    entity_registry: er.EntityRegistry,
+) -> None:
+    """A new name on the hub becomes the device name, the entity ids stay."""
+    assert await setup_config_entry(hass, mock_config_entry)
+    device = device_registry.async_get_device_by_identifier(
+        (DOMAIN, str(DEST_ID)), ENTRY_ID
+    )
+    assert device is not None
+    entity_ids = {
+        e.entity_id for e in er.async_entries_for_device(entity_registry, device.id)
+    }
+    renamed = copy.deepcopy(gateway.config)
+    for dest in renamed["destinations"]:
+        if dest["id"] == DEST_ID:
+            dest["names"] = ["Renamed", "", "", ""]
+    gateway.config = renamed
+
+    await mock_config_entry.runtime_data.coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+    device = device_registry.async_get_device_by_identifier(
+        (DOMAIN, str(DEST_ID)), ENTRY_ID
+    )
+    assert device is not None
+    assert device.name == "Renamed"
+    assert entity_ids == {
+        e.entity_id for e in er.async_entries_for_device(entity_registry, device.id)
+    }
+
+
+async def test_device_name_given_in_home_assistant_stays(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    gateway: FakeGateway,
+    device_registry: dr.DeviceRegistry,
+) -> None:
+    """A name that the user gave to the device is not replaced."""
+    assert await setup_config_entry(hass, mock_config_entry)
+    device = device_registry.async_get_device_by_identifier(
+        (DOMAIN, str(DEST_ID)), ENTRY_ID
+    )
+    assert device is not None
+    device_registry.async_update_device(device.id, name_by_user="My name")
+    renamed = copy.deepcopy(gateway.config)
+    for dest in renamed["destinations"]:
+        if dest["id"] == DEST_ID:
+            dest["names"] = ["Renamed", "", "", ""]
+    gateway.config = renamed
+
+    await mock_config_entry.runtime_data.coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+    device = device_registry.async_get_device_by_identifier(
+        (DOMAIN, str(DEST_ID)), ENTRY_ID
+    )
+    assert device is not None
+    assert device.name_by_user == "My name"
+    assert device.name == "Renamed"

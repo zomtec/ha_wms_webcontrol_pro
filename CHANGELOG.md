@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.1 (unreleased)
+
+Requires `pywmswebcontrolpro` 0.2.1.
+
+Fixed:
+
+- A status that contains the rotation of the slats but no position updates the tilt
+  position. Before, such a status was dropped.
+- A destination that is renamed on the gateway gets the new name as device name with
+  the next reading of the configuration. A name given in Home Assistant and the
+  entity ids stay as they are.
+
 ## 0.2.0
 
 Requires `pywmswebcontrolpro` 0.2.0.
