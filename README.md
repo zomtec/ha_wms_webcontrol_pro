@@ -15,6 +15,10 @@ The integration uses the library
 [`pywmswebcontrolpro`](https://github.com/zomtec/pywmswebcontrolpro). All device logic
 lives in the library, the integration only maps it to Home Assistant entities.
 
+## Disclaimer
+
+This is an independent community project and is not affiliated with, endorsed by, or sponsored by Warema Renkhoff SE, the manufacturer of the WMS WebControl pro. Warema, WMS and related product names are trademarks of their respective owners.
+
 ## Why this integration exists next to the core integration
 
 Home Assistant Core has an integration for the same gateway, `wmspro`. This integration
