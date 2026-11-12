@@ -246,8 +246,10 @@ actions:
   is shown at once.
 - Only one Home Assistant integration should control a gateway. Do not set up the gateway
   with this integration and with the core integration `wmspro` at the same time.
-- Components are found when the integration is loaded. Reload the integration after you
-  change the configuration of the gateway.
+- The configuration of the gateway is read again every 30 minutes. New components then
+  get their entities and components that the gateway no longer reports lose their
+  device. Names and functions of a component that is already known are not updated,
+  reload the integration for that.
 
 ## Troubleshooting
 

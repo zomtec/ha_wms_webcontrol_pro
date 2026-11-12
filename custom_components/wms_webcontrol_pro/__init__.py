@@ -93,6 +93,20 @@ async def async_unload_entry(
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 
+async def async_remove_config_entry_device(
+    hass: HomeAssistant,
+    entry: WebControlProConfigEntry,
+    device_entry: dr.DeviceEntry,
+) -> bool:
+    """Allow to remove a device that the hub does not report any more."""
+    valid = entry.runtime_data.coordinator.async_valid_identifiers()
+    return all(
+        identifier not in valid
+        for domain, identifier in device_entry.identifiers
+        if domain == DOMAIN
+    )
+
+
 async def async_remove_entry(
     hass: HomeAssistant, entry: WebControlProConfigEntry
 ) -> None:

@@ -1,15 +1,50 @@
 """Generic entity for the WMS WebControl pro integration."""
 
+from collections.abc import Callable, Iterable
+
+from homeassistant.core import callback
 from homeassistant.helpers.device_registry import (
     DeviceInfo,
     async_get_device_id_by_identifier,
 )
+from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from pywmswebcontrolpro.destination import Destination
 
 from .const import ATTRIBUTION, DOMAIN, MANUFACTURER
-from .coordinator import WebControlProCoordinator
+from .coordinator import WebControlProConfigEntry, WebControlProCoordinator
+
+
+@callback
+def async_setup_destination_entities(
+    entry: WebControlProConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+    factory: Callable[[WebControlProCoordinator, Destination], Iterable[Entity]],
+) -> None:
+    """Add the entities of all destinations, also of those that appear later.
+
+    The factory creates the entities of one destination, a destination that
+    is new after the coordinator read the configuration again gets them too.
+    """
+    coordinator = entry.runtime_data.coordinator
+    known: set[int] = set()
+
+    @callback
+    def _async_add_new() -> None:
+        new = [
+            dest
+            for dest_id, dest in coordinator.hub.dests.items()
+            if dest_id not in known
+        ]
+        known.update(dest.id for dest in new)
+        async_add_entities(
+            entity for dest in new for entity in factory(coordinator, dest)
+        )
+
+    _async_add_new()
+    entry.async_on_unload(coordinator.async_add_listener(_async_add_new))
 
 
 class WebControlProEntity(CoordinatorEntity[WebControlProCoordinator]):

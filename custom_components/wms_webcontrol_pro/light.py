@@ -16,7 +16,7 @@ from pywmswebcontrolpro.destination import Destination
 
 from .const import BRIGHTNESS_SCALE, SETTLE_SWITCH
 from .coordinator import WebControlProConfigEntry, WebControlProCoordinator
-from .entity import WebControlProEntity
+from .entity import WebControlProEntity, async_setup_destination_entities
 
 PARALLEL_UPDATES = 1
 
@@ -27,16 +27,18 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the lights of a hub."""
-    coordinator = entry.runtime_data.coordinator
+    async_setup_destination_entities(entry, async_add_entities, _entities)
 
-    entities: list[WebControlProLight] = []
-    for dest in entry.runtime_data.hub.dests.values():
-        if dest.hasAction(ACTION_DESC.LightDimming):
-            entities.append(WebControlProDimmer(coordinator, dest))
-        elif dest.hasAction(ACTION_DESC.LightSwitch):
-            entities.append(WebControlProLight(coordinator, dest))
 
-    async_add_entities(entities)
+def _entities(
+    coordinator: WebControlProCoordinator, dest: Destination
+) -> list[WebControlProLight]:
+    """Return the lights of a destination."""
+    if dest.hasAction(ACTION_DESC.LightDimming):
+        return [WebControlProDimmer(coordinator, dest)]
+    if dest.hasAction(ACTION_DESC.LightSwitch):
+        return [WebControlProLight(coordinator, dest)]
+    return []
 
 
 class WebControlProLight(WebControlProEntity, LightEntity):

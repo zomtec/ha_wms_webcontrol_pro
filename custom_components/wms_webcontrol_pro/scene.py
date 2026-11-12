@@ -3,7 +3,7 @@
 from typing import Any, override
 
 from homeassistant.components.scene import Scene
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import (
     DeviceInfo,
     async_get_device_id_by_identifier,
@@ -24,13 +24,24 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up the scenes of a hub."""
-    via_device_id = async_get_device_id_by_identifier(
-        hass, (DOMAIN, entry.entry_id), config_entry_id=entry.entry_id
-    )
-    async_add_entities(
-        WebControlProScene(scene, via_device_id)
-        for scene in entry.runtime_data.hub.scenes.values()
-    )
+    coordinator = entry.runtime_data.coordinator
+    known: set[int] = set()
+
+    @callback
+    def _async_add_new() -> None:
+        new = [
+            scene
+            for scene_id, scene in coordinator.hub.scenes.items()
+            if scene_id not in known
+        ]
+        known.update(scene.id for scene in new)
+        via_device_id = async_get_device_id_by_identifier(
+            hass, (DOMAIN, entry.entry_id), config_entry_id=entry.entry_id
+        )
+        async_add_entities(WebControlProScene(scene, via_device_id) for scene in new)
+
+    _async_add_new()
+    entry.async_on_unload(coordinator.async_add_listener(_async_add_new))
 
 
 class WebControlProScene(Scene):
