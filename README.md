@@ -1,5 +1,11 @@
 # WMS WebControl pro for Home Assistant
 
+[![License](https://img.shields.io/github/license/zomtec/ha_wms_webcontrol_pro)](https://github.com/zomtec/ha_wms_webcontrol_pro/blob/main/LICENSE)
+[![Release](https://img.shields.io/github/v/release/zomtec/ha_wms_webcontrol_pro)](https://github.com/zomtec/ha_wms_webcontrol_pro/releases)
+[![Validate](https://img.shields.io/github/actions/workflow/status/zomtec/ha_wms_webcontrol_pro/validate.yml?branch=main&label=validate)](https://github.com/zomtec/ha_wms_webcontrol_pro/actions/workflows/validate.yml)
+[![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.10%2B-18bcf2.svg)](https://www.home-assistant.io)
+
 Custom integration (HACS) for the [Warema](https://www.warema.com) WMS WebControl pro
 gateway. The gateway connects the WMS radio system of Warema (awnings, roller shutters,
 blinds, lights and other components) to the network. This integration controls these
@@ -70,6 +76,13 @@ a component gets is described in [Entities](#entities).
 - Start the scenes that are configured in the gateway.
 
 ## Installation
+
+[![Open your Home Assistant instance and open this repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=zomtec&repository=ha_wms_webcontrol_pro&category=integration)
+
+[![Open your Home Assistant instance and start setting up the integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=wms_webcontrol_pro)
+
+The first button adds this repository to HACS, the second one starts the setup of the
+integration after it was downloaded and Home Assistant was restarted. Or do it by hand:
 
 1. Add this repository as a custom repository of type *Integration* in HACS.
 2. Download the integration and restart Home Assistant.
