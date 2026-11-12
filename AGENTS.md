@@ -6,7 +6,7 @@ default agent behavior. When a rule conflicts with a user request, say so and as
 ## Project
 
 Custom Home Assistant integration (HACS) for the Warema WMS WebControl pro gateway,
-domain `ha_wms_webcontrol_pro`. Device logic lives in the library
+domain `wms_webcontrol_pro`. Device logic lives in the library
 [`pywmswebcontrolpro`](https://github.com/zomtec/pywmswebcontrolpro). The domain must
 never be `wmspro`, that would replace the core integration.
 
@@ -71,5 +71,5 @@ python -m pytest
 ## Release
 
 `manifest.json` keeps `"version": "0.0.0"`. The release workflow writes the tag into it
-and attaches `ha_wms_webcontrol_pro.zip` to the GitHub release. Publishing the library
+and attaches `wms_webcontrol_pro.zip` to the GitHub release. Publishing the library
 to PyPI and the integration to HACS is done by the owner.

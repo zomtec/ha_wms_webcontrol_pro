@@ -29,7 +29,7 @@ jobs:
           import os
           from pathlib import Path
 
-          manifest_path = Path("custom_components/ha_wms_webcontrol_pro/manifest.json")
+          manifest_path = Path("custom_components/wms_webcontrol_pro/manifest.json")
           manifest = json.loads(manifest_path.read_text())
           manifest["version"] = os.environ["RELEASE_TAG"].removeprefix("v")
           manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
@@ -38,11 +38,11 @@ jobs:
       - name: Package integration
         shell: bash
         run: |
-          cd "${GITHUB_WORKSPACE}/custom_components/ha_wms_webcontrol_pro"
-          zip -r "${GITHUB_WORKSPACE}/ha_wms_webcontrol_pro.zip" .
+          cd "${GITHUB_WORKSPACE}/custom_components/wms_webcontrol_pro"
+          zip -r "${GITHUB_WORKSPACE}/wms_webcontrol_pro.zip" .
 
       - name: Upload ZIP to release
         uses: softprops/action-gh-release@v3.0.4
         with:
-          files: ${{ github.workspace }}/ha_wms_webcontrol_pro.zip
+          files: ${{ github.workspace }}/wms_webcontrol_pro.zip
           fail_on_unmatched_files: true

@@ -1,5 +1,5 @@
 {
-  "domain": "ha_wms_webcontrol_pro",
+  "domain": "wms_webcontrol_pro",
   "name": "WMS WebControl pro",
   "codeowners": ["@zomtec"],
   "config_flow": true,

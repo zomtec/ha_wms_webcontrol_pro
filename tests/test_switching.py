@@ -38,7 +38,7 @@ SCENE_SETUP = ("config_prod_awning_dimmer.json", "status_prod_dimmer.json")
 def _entity_id(hass: HomeAssistant, domain: str, unique_id: str) -> str:
     """Return the entity id of an entity by its unique id."""
     entity_id = er.async_get(hass).async_get_entity_id(
-        domain, "ha_wms_webcontrol_pro", unique_id
+        domain, "wms_webcontrol_pro", unique_id
     )
     assert entity_id is not None
     return entity_id

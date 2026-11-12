@@ -5,7 +5,7 @@ from homeassistant.components.diagnostics import REDACTED
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.ha_wms_webcontrol_pro.diagnostics import (
+from custom_components.wms_webcontrol_pro.diagnostics import (
     async_get_config_entry_diagnostics,
 )
 

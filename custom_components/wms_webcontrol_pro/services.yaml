@@ -1,7 +1,7 @@
 set_cover_position_and_tilt:
   target:
     entity:
-      integration: ha_wms_webcontrol_pro
+      integration: wms_webcontrol_pro
       domain: cover
       supported_features:
         - - cover.CoverEntityFeature.SET_POSITION

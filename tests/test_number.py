@@ -39,7 +39,7 @@ AWNING_SETUP = ("config_prod_awning_valance.json", "status_prod_valance.json")
 def _entity_id(hass: HomeAssistant, domain: str, unique_id: str) -> str:
     """Return the entity id of an entity by its unique id."""
     entity_id = er.async_get(hass).async_get_entity_id(
-        domain, "ha_wms_webcontrol_pro", unique_id
+        domain, "wms_webcontrol_pro", unique_id
     )
     assert entity_id is not None
     return entity_id
@@ -79,7 +79,7 @@ async def test_every_cover_drive_has_travel_time_numbers(
 
     for unique_id in unique_ids:
         assert registry.async_get_entity_id(
-            NUMBER_DOMAIN, "ha_wms_webcontrol_pro", unique_id
+            NUMBER_DOMAIN, "wms_webcontrol_pro", unique_id
         )
 
 
