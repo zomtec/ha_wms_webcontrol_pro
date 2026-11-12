@@ -272,6 +272,10 @@ Settings and learned values are stored by the library in
 `.storage/wms_webcontrol_pro-<entry id>/<destination id>/<action id>.json`. The
 directory is removed when the config entry is removed.
 
+## Acknowledgments
+
+This integration was created with substantial assistance from Claude, an AI assistant by Anthropic.
+
 ## Origin and license
 
 The integration is derived from the [`wmspro`](https://github.com/home-assistant/core/tree/dev/homeassistant/components/wmspro) integration of Home Assistant Core by
@@ -287,7 +291,3 @@ python -m pytest
 
 The version in `manifest.json` stays `0.0.0`, the release workflow writes the tag of
 the GitHub release into it. The manifest pins the exact version of the library.
-
-## Acknowledgments
-
-This integration was created with substantial assistance from Claude, an AI assistant by Anthropic.
