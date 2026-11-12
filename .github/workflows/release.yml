@@ -42,7 +42,7 @@ jobs:
           zip -r "${GITHUB_WORKSPACE}/ha_wms_webcontrol_pro.zip" .
 
       - name: Upload ZIP to release
-        uses: softprops/action-gh-release@v3.0.3
+        uses: softprops/action-gh-release@v3.0.4
         with:
           files: ${{ github.workspace }}/ha_wms_webcontrol_pro.zip
           fail_on_unmatched_files: true
