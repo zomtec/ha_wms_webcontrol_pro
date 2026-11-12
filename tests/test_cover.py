@@ -11,7 +11,9 @@ from homeassistant.components.cover import (
     ATTR_TILT_POSITION,
     DOMAIN as COVER_DOMAIN,
     SERVICE_CLOSE_COVER,
+    SERVICE_CLOSE_COVER_TILT,
     SERVICE_OPEN_COVER,
+    SERVICE_OPEN_COVER_TILT,
     SERVICE_SET_COVER_POSITION,
     SERVICE_SET_COVER_TILT_POSITION,
     SERVICE_STOP_COVER,
@@ -48,7 +50,7 @@ ROLLER_ID = 18894
 SLAT = "cover.zonwering_begane_grond_keuken_alle"
 SLAT_ID = 413716
 AWNING = "cover.raum_0_markise"
-VALANCE = "cover.raum_0_markise_2"
+VALANCE = "cover.raum_0_markise_valance"
 AWNING_ID = 58717
 
 ROLLER_SETUP = ("config_prod_roller_shutter.json", "status_prod_roller_shutter.json")
@@ -285,13 +287,16 @@ async def test_stop_sends_the_stop_command_and_freezes_the_drive(
 async def test_rejected_command_keeps_the_state_and_checks_the_hub(
     hass: HomeAssistant, mock_config_entry: MockConfigEntry, gateway: FakeGateway
 ) -> None:
-    """A command the hub refuses does not change the shown position."""
+    """A command the hub refuses is an error and does not change the position."""
     assert await setup_config_entry(hass, mock_config_entry)
-    gateway.action_response = {"errors": [1]}
+    gateway.action_response = {"errors": [0x50005]}
     gateway.commands.clear()
 
-    await _call(hass, SERVICE_OPEN_COVER, ROLLER)
+    with pytest.raises(HomeAssistantError) as error:
+        await _call(hass, SERVICE_OPEN_COVER, ROLLER)
 
+    assert error.value.translation_key == "command_rejected"
+    assert len(_drive_commands(gateway)) == 1
     cover = hass.states.get(ROLLER)
     assert cover.state == "closed"
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=130))
@@ -363,8 +368,11 @@ async def test_deviating_measurement_is_checked_again_a_limited_number_of_times(
 @pytest.mark.parametrize(
     ("service", "data", "rotation"),
     [
-        (SERVICE_SET_COVER_TILT_POSITION, {ATTR_TILT_POSITION: 100}, -128),
-        (SERVICE_SET_COVER_TILT_POSITION, {ATTR_TILT_POSITION: 0}, 127),
+        (SERVICE_SET_COVER_TILT_POSITION, {ATTR_TILT_POSITION: 100}, -75),
+        (SERVICE_SET_COVER_TILT_POSITION, {ATTR_TILT_POSITION: 50}, 0),
+        (SERVICE_SET_COVER_TILT_POSITION, {ATTR_TILT_POSITION: 0}, 75),
+        (SERVICE_OPEN_COVER_TILT, {}, 0),
+        (SERVICE_CLOSE_COVER_TILT, {}, 75),
     ],
 )
 @pytest.mark.usefixtures("clock")
@@ -376,7 +384,10 @@ async def test_tilt_command_uses_the_rotation_range(
     data: dict[str, Any],
     rotation: int,
 ) -> None:
-    """Tilt 100 maps to the minimum rotation, tilt 0 to the maximum rotation."""
+    """The rotation stays within the limits of the library, -75 to 75.
+
+    The hub of the fixture reports -127 and 127, the firmware bug.
+    """
     assert await setup_config_entry(hass, mock_config_entry)
     gateway.commands.clear()
 
@@ -403,7 +414,124 @@ async def test_position_and_tilt_service_sends_both_in_one_request(
     )
 
     (command,) = _drive_commands(gateway)
-    assert _parameters(command) == [{"percentage": 60}, {"rotation": -128}]
+    assert _parameters(command) == [{"percentage": 60}, {"rotation": -75}]
     cover = hass.states.get(SLAT)
     assert cover.attributes[ATTR_CURRENT_POSITION] == 40
     assert cover.attributes[ATTR_CURRENT_TILT_POSITION] == 100
+
+
+@pytest.mark.parametrize("gateway", [SLAT_SETUP], indirect=True)
+@pytest.mark.parametrize(
+    ("service", "data", "parameters", "position", "tilt"),
+    [
+        (SERVICE_OPEN_COVER, {}, [{"percentage": 0}, {"rotation": -75}], 100, 100),
+        (SERVICE_CLOSE_COVER, {}, [{"percentage": 100}, {"rotation": 75}], 0, 0),
+        (
+            SERVICE_SET_COVER_POSITION,
+            {ATTR_POSITION: 100},
+            [{"percentage": 0}, {"rotation": -75}],
+            100,
+            100,
+        ),
+        (
+            SERVICE_SET_COVER_POSITION,
+            {ATTR_POSITION: 0},
+            [{"percentage": 100}, {"rotation": 75}],
+            0,
+            0,
+        ),
+        (SERVICE_SET_COVER_POSITION, {ATTR_POSITION: 30}, [{"percentage": 70}], 30, 50),
+    ],
+)
+@pytest.mark.usefixtures("clock")
+async def test_slat_cover_tilts_with_open_and_close(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    gateway: FakeGateway,
+    service: str,
+    data: dict[str, Any],
+    parameters: list[dict[str, Any]],
+    position: int,
+    tilt: int,
+) -> None:
+    """Opening and closing turn the slats to the end, a position in between does not."""
+    assert await setup_config_entry(hass, mock_config_entry)
+    gateway.commands.clear()
+
+    await _call(hass, service, SLAT, **data)
+
+    (command,) = _drive_commands(gateway)
+    assert _parameters(command) == parameters
+    cover = hass.states.get(SLAT)
+    assert cover.attributes[ATTR_CURRENT_POSITION] == position
+    assert cover.attributes[ATTR_CURRENT_TILT_POSITION] == tilt
+
+
+@pytest.mark.parametrize("gateway", [SLAT_SETUP], indirect=True)
+@pytest.mark.usefixtures("clock")
+async def test_tilt_uses_the_rotation_limits_that_were_set(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, gateway: FakeGateway
+) -> None:
+    """The cover and the limits come from the same place, the library."""
+    assert await setup_config_entry(hass, mock_config_entry)
+    tilt_action = mock_config_entry.runtime_data.hub.dests[SLAT_ID].action(
+        ACTION_DESC.SlatRotate
+    )
+    await tilt_action.set_rotation_range(minimum=-60, maximum=80)
+    gateway.commands.clear()
+
+    await _call(
+        hass, SERVICE_SET_COVER_TILT_POSITION, SLAT, **{ATTR_TILT_POSITION: 100}
+    )
+    await _call(hass, SERVICE_SET_COVER_TILT_POSITION, SLAT, **{ATTR_TILT_POSITION: 0})
+
+    first, second = _drive_commands(gateway)
+    assert _parameters(first) == [{"rotation": -60}]
+    assert _parameters(second) == [{"rotation": 80}]
+
+
+@pytest.mark.parametrize("gateway", [AWNING_SETUP], indirect=True)
+async def test_awning_and_valance_each_get_their_status_request(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    gateway: FakeGateway,
+    clock: FakeClock,
+) -> None:
+    """A command for the valance does not replace the request of the awning."""
+    assert await setup_config_entry(hass, mock_config_entry)
+    dest = mock_config_entry.runtime_data.hub.dests[AWNING_ID]
+    awning = dest.action(ACTION_DESC.AwningDrive)
+    valance = dest.action(ACTION_DESC.ValanceDrive)
+    await awning.set_travel_time(TravelDirection.OPEN, 60)
+    await valance.set_travel_time(TravelDirection.OPEN, 10)
+    gateway.commands.clear()
+
+    await _call(hass, SERVICE_OPEN_COVER, AWNING)
+    await _call(hass, SERVICE_OPEN_COVER, VALANCE)
+
+    # The valance is asked after its drive, the awning is still moving.
+    clock.now += 13
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=13))
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert len(gateway.commands_named("getStatus")) == 1
+    assert hass.states.get(AWNING).state == "opening"
+
+    # The hub still reports the awning closed after its calculated drive.
+    clock.now += 50
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=63))
+    await hass.async_block_till_done(wait_background_tasks=True)
+    cover = hass.states.get(AWNING)
+    assert cover.state == "closed"
+    assert cover.attributes[ATTR_POSITION_SOURCE] == "measured"
+
+
+@pytest.mark.parametrize("gateway", [AWNING_SETUP], indirect=True)
+@pytest.mark.usefixtures("gateway")
+async def test_valance_is_named(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
+    """The second cover of an awning can be told apart by its name."""
+    assert await setup_config_entry(hass, mock_config_entry)
+
+    assert hass.states.get(AWNING).name == "Markise"
+    assert hass.states.get(VALANCE).name == "Markise Valance"

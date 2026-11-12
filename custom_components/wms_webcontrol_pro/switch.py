@@ -52,8 +52,11 @@ class WebControlProSwitch(WebControlProEntity, SwitchEntity):
     async def _async_switch(self, state: bool) -> None:
         """Switch the load, show the result and check it a moment later."""
         action = self._dest.action(ACTION_DESC.LoadSwitch)
-        await action(
-            onOffState=state, responseType=WMS_WebControl_pro_API_responseType.Detailed
+        await self._async_command(
+            action(
+                onOffState=state,
+                responseType=WMS_WebControl_pro_API_responseType.Detailed,
+            )
         )
         action["onOffState"] = state
         self.coordinator.async_schedule_refresh(self._dest.id, SETTLE_SWITCH)

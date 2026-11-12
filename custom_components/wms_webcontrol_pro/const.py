@@ -10,6 +10,8 @@ MANUFACTURER = "WAREMA Renkhoff SE"
 
 # The hub is a radio gateway, a long interval keeps the radio traffic low.
 BASE_POLL_INTERVAL = timedelta(minutes=30)
+# A hub that did not answer is asked again after this many seconds.
+RETRY_AFTER_FAILURE = 60.0
 # Pause between two status requests to the hub.
 STATUS_REQUEST_SPACING = 2.0
 
@@ -27,3 +29,7 @@ SETTLE_ROTATION = 5.0
 BRIGHTNESS_SCALE = (1, 100)
 # Seconds until the status is requested after a light or switch command.
 SETTLE_SWITCH = 2.0
+# Seconds until every destination is asked after a scene. The hub does not tell
+# which drives a scene moves or for how long, so this is the delay that the
+# library uses for a drive of unknown duration.
+SETTLE_SCENE = 120.0

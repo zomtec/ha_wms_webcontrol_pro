@@ -36,6 +36,11 @@ class FakeGateway:
         self.commands: list[dict[str, Any]] = []
         self.action_response: dict[str, Any] = {"status": 0}
         self.ping_status = 0
+        self.unanswered: set[str] = set()
+
+    def stop_answering(self, *commands: str) -> None:
+        """Let the requests of the given commands time out, none answers again."""
+        self.unanswered = set(commands)
 
     def queue_status(self, dest_id: int, *answers: dict[str, Any]) -> None:
         """Queue status answers for a destination, the last one is repeated."""
@@ -51,6 +56,8 @@ class FakeGateway:
         """Answer one request."""
         self.commands.append(data)
         command = data["command"]
+        if command in self.unanswered:
+            raise TimeoutError
         if command == "ping":
             body: dict[str, Any] = {"status": self.ping_status}
         elif command == "getConfiguration":

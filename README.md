@@ -122,7 +122,11 @@ A gateway that is set up once cannot be set up a second time. The integration ha
 options, all settings (travel times, rotation limits) are number entities.
 
 To change the host later, use *Reconfigure* in the menu of the entry. The setup refuses
-a gateway that has other rooms than the one of the entry.
+a gateway that has none of the components and rooms of the entry.
+
+The API of the gateway has no serial number. A gateway that was set up by hand is
+therefore recognized by its components and rooms, a gateway found by DHCP also by its
+MAC address.
 
 ### Discovery
 
@@ -152,8 +156,8 @@ a load) is a device that is connected to it.
 | Switch | Loads |
 | Scene | Scenes of the gateway, attached to the device of their room |
 
-An awning with a valance has two covers, one for each drive. The valance has its own
-travel times.
+An awning with a valance has two covers, one for each drive, the second one is named
+*Valance*. The valance has its own travel times.
 
 ### Covers
 
@@ -166,8 +170,11 @@ attribute `position_source` shows where the position comes from (`measured`,
 Without travel times the target position is shown at once and checked later. Set the
 travel times for a smooth position display and for the opening and closing states.
 
-Covers with tilt (slat drive with rotation) support the tilt position. Opening or
-closing such a cover also moves the slats like the WMS WebControl pro does.
+Covers with tilt (slat drive with rotation) support the tilt position. Tilt 100 is the
+minimum rotation and tilt 0 the maximum rotation, see [Slat rotation](#slat-rotation).
+Opening or closing such a cover also turns the slats to that end, like the WMS
+WebControl pro does. *Open tilt* turns the slats horizontal (rotation 0), which lets
+the most light through and is shown as tilt 50.
 
 ### Travel times
 
@@ -179,11 +186,27 @@ the library.
 ### Slat rotation
 
 The slat drives with rotation have the number entities *Minimum rotation*, *Maximum
-rotation* and *Raw rotation* and the button *Reset rotation range*. The limits start
-at -75 and 75 and are widened automatically when a larger rotation is measured. The
-button restores the limits.
-*Raw rotation* is a diagnostic value and disabled by default, enable it in the entity
-settings if you need it.
+rotation* and *Raw rotation* and the button *Reset rotation range*.
+
+**Firmware bug of the gateway:** the WMS WebControl pro reports the rotation limits of
+slat drives as -127 and 127, but the drives turn from -75 to 75. With the reported
+limits closed slats would be shown as 21 % open. Warema knows the bug, a fixed firmware
+has not been announced.
+
+The library `pywmswebcontrolpro` works around it, the integration only shows the result:
+
+- While the gateway reports exactly -127 and 127, the limits are -75 and 75. The number
+  entities show the limits that the cover really uses.
+- A rotation that is measured beyond the limits widens them.
+- A limit that is set in a number entity is stored and used at once. The button returns
+  to -75 and 75.
+- The rotation that is sent is a whole number within the limits.
+
+The workaround ends by itself when a firmware reports other limits, and will then be
+removed from the library.
+
+*Raw rotation* is a diagnostic value with the limits of the gateway and disabled by
+default, enable it in the entity settings if you need it.
 
 ## Actions
 
@@ -201,7 +224,18 @@ minutes) and never repeats a request when the radio channel is busy. After a com
 the integration asks the affected destination once for its status: after the calculated
 drive time for covers, after a few seconds for lights, switches and the rotation. If a
 cover reports a position that differs from the calculated one, it is asked again up to
-three times in a 30 seconds interval.
+three times in a 30 seconds interval. The awning and the valance of one destination
+each get their own request.
+
+The gateway does not tell which components a scene moves or for how long. Two minutes
+after a scene every destination is asked once.
+
+A command that the gateway rejects, for example because the radio channel is busy, or
+does not answer is reported as an error of the action. It is not sent again.
+
+If a single request for the configuration fails, the known configuration stays in use.
+The entities only become unavailable when the gateway does not answer at all, it is
+then asked again every minute.
 
 The library counts the results per destination and logs a warning only if a destination
 stays silent for a long time. The counters are part of the diagnostics download. The
@@ -247,9 +281,13 @@ actions:
 - Only one Home Assistant integration should control a gateway. Do not set up the gateway
   with this integration and with the core integration `wmspro` at the same time.
 - The configuration of the gateway is read again every 30 minutes. New components then
-  get their entities and components that the gateway no longer reports lose their
-  device. Names and functions of a component that is already known are not updated,
-  reload the integration for that.
+  get their entities. A component or scene that the gateway no longer reports loses its
+  entities at once and its device when the next reading confirms it, so one incomplete
+  answer deletes nothing. Names and functions of a component that is already known are
+  not updated, reload the integration for that.
+- The gateway offers its API only over HTTP without authentication. Run it in a
+  trusted network.
+- After a scene the state of the components is unknown for up to two minutes.
 
 ## Troubleshooting
 
@@ -258,9 +296,11 @@ actions:
 - **A cover shows the wrong position:** enter the travel times of the drive. The next status
   request corrects the position. A cover that moved on its own
   is asked again up to three times.
-- **A destination is unavailable:** the gateway reports no data for it, for example when
-  the component is out of radio range. The diagnostics show how often each destination
-  answered, was busy or failed.
+- **A destination is unavailable:** the gateway reports a heartbeat error or a blocked
+  drive for it, for example when the component is out of radio range. The diagnostics
+  show how often each destination answered, was busy or failed.
+- **An action fails with "rejected the command":** the gateway did not send the
+  command, usually because the radio channel was busy. Repeat the action.
 - **Download the diagnostics** in *Settings, Devices & services* with *Download
   diagnostics* when you report a problem. The host is redacted.
 - **Debug logs:** add this to `configuration.yaml` and restart:

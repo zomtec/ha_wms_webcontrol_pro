@@ -4,6 +4,7 @@ import copy
 from typing import Any
 
 import pytest
+from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -56,28 +57,72 @@ async def test_destination_that_disappears_loses_its_device(
     mock_config_entry: MockConfigEntry,
     gateway: FakeGateway,
     device_registry: dr.DeviceRegistry,
+    entity_registry: er.EntityRegistry,
 ) -> None:
-    """A destination removed from the hub is removed from the device registry."""
+    """The device goes when two readings in a row do not contain the destination."""
     assert await setup_config_entry(hass, mock_config_entry)
-    assert device_registry.async_get_device_by_identifier(
+    device = device_registry.async_get_device_by_identifier(
         (DOMAIN, str(OTHER_DEST_ID)), mock_config_entry.entry_id
     )
+    assert device
+    entities = er.async_entries_for_device(entity_registry, device.id)
 
     gateway.config = _without_destination(gateway.config, OTHER_DEST_ID)
     coordinator = mock_config_entry.runtime_data.coordinator
     await coordinator.async_refresh()
     await hass.async_block_till_done()
 
-    assert (
-        device_registry.async_get_device_by_identifier(
-            (DOMAIN, str(OTHER_DEST_ID)), mock_config_entry.entry_id
-        )
-        is None
+    # The first reading only takes the entities away, their settings stay.
+    assert device_registry.async_get(device.id)
+    assert all(entity_registry.async_get(entity.entity_id) for entity in entities)
+    assert all(
+        hass.states.get(entity.entity_id).state == STATE_UNAVAILABLE
+        for entity in entities
+        if not entity.disabled
     )
+    assert OTHER_DEST_ID not in coordinator.data
+
+    await coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+    assert device_registry.async_get(device.id) is None
+    assert not any(entity_registry.async_get(entity.entity_id) for entity in entities)
     assert device_registry.async_get_device_by_identifier(
         (DOMAIN, str(DEST_ID)), mock_config_entry.entry_id
     )
-    assert OTHER_DEST_ID not in coordinator.data
+
+
+async def test_destination_that_is_missing_once_keeps_its_device(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    gateway: FakeGateway,
+    device_registry: dr.DeviceRegistry,
+    entity_registry: er.EntityRegistry,
+) -> None:
+    """One incomplete answer of the hub does not delete a device."""
+    full_config = gateway.config
+    assert await setup_config_entry(hass, mock_config_entry)
+    device = device_registry.async_get_device_by_identifier(
+        (DOMAIN, str(OTHER_DEST_ID)), mock_config_entry.entry_id
+    )
+    assert device
+    entities = er.async_entries_for_device(entity_registry, device.id)
+    coordinator = mock_config_entry.runtime_data.coordinator
+
+    gateway.config = _without_destination(full_config, OTHER_DEST_ID)
+    await coordinator.async_refresh()
+    gateway.config = full_config
+    await coordinator.async_refresh()
+    await coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+    assert device_registry.async_get(device.id)
+    assert all(
+        hass.states.get(entity.entity_id).state != STATE_UNAVAILABLE
+        for entity in entities
+        if not entity.disabled
+    )
+    assert len(er.async_entries_for_device(entity_registry, device.id)) == len(entities)
 
 
 async def test_device_can_only_be_deleted_when_the_hub_does_not_report_it(

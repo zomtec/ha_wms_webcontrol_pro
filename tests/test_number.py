@@ -111,11 +111,17 @@ async def test_travel_time_of_the_valance_is_stored_on_its_own_action(
 async def test_slat_range_numbers_default_and_reset(
     hass: HomeAssistant, mock_config_entry: MockConfigEntry, gateway: FakeGateway
 ) -> None:
-    """The range starts with the community defaults and the button resets it."""
+    """The numbers show the limits that the library uses, the button resets them."""
     assert await setup_config_entry(hass, mock_config_entry)
     minimum = _entity_id(hass, NUMBER_DOMAIN, f"{SLAT_ID}-rotation-min")
+    maximum = _entity_id(hass, NUMBER_DOMAIN, f"{SLAT_ID}-rotation-max")
     reset = _entity_id(hass, BUTTON_DOMAIN, f"{SLAT_ID}-rotation-reset")
+    action = mock_config_entry.runtime_data.hub.dests[SLAT_ID].action(
+        ACTION_DESC.SlatRotate
+    )
     assert float(hass.states.get(minimum).state) == -75
+    assert float(hass.states.get(maximum).state) == 75
+    assert action.rotation_range == (-75, 75)
 
     await hass.services.async_call(
         NUMBER_DOMAIN,
@@ -123,12 +129,22 @@ async def test_slat_range_numbers_default_and_reset(
         {ATTR_ENTITY_ID: minimum, ATTR_VALUE: -60},
         blocking=True,
     )
+    await hass.services.async_call(
+        NUMBER_DOMAIN,
+        SERVICE_SET_VALUE,
+        {ATTR_ENTITY_ID: maximum, ATTR_VALUE: 80},
+        blocking=True,
+    )
     assert float(hass.states.get(minimum).state) == -60
+    assert float(hass.states.get(maximum).state) == 80
+    assert action.rotation_range == (-60, 80)
 
     await hass.services.async_call(
         BUTTON_DOMAIN, SERVICE_PRESS, {ATTR_ENTITY_ID: reset}, blocking=True
     )
     assert float(hass.states.get(minimum).state) == -75
+    assert float(hass.states.get(maximum).state) == 75
+    assert action.rotation_range == (-75, 75)
 
 
 @pytest.mark.parametrize("gateway", [SLAT_SETUP], indirect=True)

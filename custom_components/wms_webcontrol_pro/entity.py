@@ -1,8 +1,11 @@
 """Generic entity for the WMS WebControl pro integration."""
 
-from collections.abc import Callable, Iterable
+import logging
+from collections.abc import Awaitable, Callable, Iterable
+from typing import Any
 
 from homeassistant.core import callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import (
     DeviceInfo,
     async_get_device_id_by_identifier,
@@ -12,9 +15,32 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from pywmswebcontrolpro.destination import Destination
+from pywmswebcontrolpro.exceptions import WebControlProCommandError, WebControlProError
 
 from .const import ATTRIBUTION, DOMAIN, MANUFACTURER
 from .coordinator import WebControlProConfigEntry, WebControlProCoordinator
+
+_LOGGER = logging.getLogger(__name__)
+
+
+async def async_send_command(name: str, command: Awaitable[Any]) -> None:
+    """Send a command to the hub and report a failure to the caller."""
+    try:
+        await command
+    except WebControlProCommandError as err:
+        _LOGGER.debug("Hub rejected a command for %s: %s", name, err.errors)
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="command_rejected",
+            translation_placeholders={"name": name},
+        ) from err
+    except WebControlProError as err:
+        _LOGGER.debug("Command for %s failed: %s", name, err)
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="command_failed",
+            translation_placeholders={"name": name},
+        ) from err
 
 
 @callback
@@ -23,28 +49,31 @@ def async_setup_destination_entities(
     async_add_entities: AddConfigEntryEntitiesCallback,
     factory: Callable[[WebControlProCoordinator, Destination], Iterable[Entity]],
 ) -> None:
-    """Add the entities of all destinations, also of those that appear later.
+    """Add the entities of all destinations and follow the configuration.
 
-    The factory creates the entities of one destination, a destination that
-    is new after the coordinator read the configuration again gets them too.
+    The factory creates the entities of one destination. A destination that
+    is new after the coordinator read the configuration again gets them too,
+    and the entities of a destination that is gone are removed. Their
+    registry entries stay until the coordinator removes the device.
     """
     coordinator = entry.runtime_data.coordinator
-    known: set[int] = set()
+    known: dict[int, list[Entity]] = {}
 
     @callback
-    def _async_add_new() -> None:
-        new = [
-            dest
-            for dest_id, dest in coordinator.hub.dests.items()
-            if dest_id not in known
-        ]
-        known.update(dest.id for dest in new)
-        async_add_entities(
-            entity for dest in new for entity in factory(coordinator, dest)
-        )
+    def _async_follow_configuration() -> None:
+        dests = coordinator.hub.dests
+        for dest_id in known.keys() - dests.keys():
+            for entity in known.pop(dest_id):
+                entry.async_create_task(coordinator.hass, entity.async_remove())
+        new: list[Entity] = []
+        for dest_id in dests.keys() - known.keys():
+            known[dest_id] = list(factory(coordinator, dests[dest_id]))
+            new.extend(known[dest_id])
+        if new:
+            async_add_entities(new)
 
-    _async_add_new()
-    entry.async_on_unload(coordinator.async_add_listener(_async_add_new))
+    _async_follow_configuration()
+    entry.async_on_unload(coordinator.async_add_listener(_async_follow_configuration))
 
 
 class WebControlProEntity(CoordinatorEntity[WebControlProCoordinator]):
@@ -84,3 +113,7 @@ class WebControlProEntity(CoordinatorEntity[WebControlProCoordinator]):
     def available(self) -> bool:
         """Return if the destination is reachable."""
         return super().available and self._dest.available
+
+    async def _async_command(self, command: Awaitable[Any]) -> None:
+        """Send a command for the destination to the hub."""
+        await async_send_command(str(self._dest), command)

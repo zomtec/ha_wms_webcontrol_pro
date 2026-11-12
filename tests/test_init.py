@@ -39,18 +39,25 @@ async def test_setup_is_retried_if_the_status_request_fails(
     hass: HomeAssistant,
     mock_config_entry: MockConfigEntry,
     gateway: FakeGateway,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A failing first status request makes the setup retry later."""
-
-    async def fail(*args: object, **kwargs: object) -> None:
-        raise TimeoutError
-
-    monkeypatch.setattr("pywmswebcontrolpro.webcontrol.WebControlPro._getStatus", fail)
+    gateway.stop_answering("getStatus")
 
     assert not await setup_config_entry(hass, mock_config_entry)
 
     assert mock_config_entry.state is ConfigEntryState.SETUP_RETRY
+
+
+async def test_setup_is_retried_if_the_ping_reports_an_error(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, gateway: FakeGateway
+) -> None:
+    """A hub that answers the ping with an error is not ready."""
+    gateway.ping_status = 1
+
+    assert not await setup_config_entry(hass, mock_config_entry)
+
+    assert mock_config_entry.state is ConfigEntryState.SETUP_RETRY
+    assert not gateway.commands_named("getConfiguration")
 
 
 async def test_setup_requests_every_destination_once(

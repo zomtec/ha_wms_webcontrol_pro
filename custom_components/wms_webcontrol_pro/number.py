@@ -1,6 +1,5 @@
 """Numbers of the WMS WebControl pro integration."""
 
-from collections.abc import Callable
 from typing import override
 
 from homeassistant.components.number import (
@@ -9,7 +8,7 @@ from homeassistant.components.number import (
     NumberMode,
 )
 from homeassistant.const import EntityCategory, UnitOfTime
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from pywmswebcontrolpro.const import (
@@ -104,12 +103,16 @@ class WebControlProTravelTime(WebControlProEntity, NumberEntity):
 
 
 class WebControlProSlatRange(WebControlProEntity, NumberEntity):
-    """Representation of a WMS based range-option for a slat-based cover."""
+    """One rotation limit of a slat-based cover, the library keeps it.
+
+    The hub reports wrong limits, see the README. The library replaces them,
+    learns from measured rotations and stores what is set here.
+    """
 
     _attr_entity_category = EntityCategory.CONFIG
 
-    _value_name: str
-    _value_func: Callable[[float, float], float]
+    # Position of the limit in the rotation range of the library.
+    _index: int
 
     def __init__(
         self, coordinator: WebControlProCoordinator, dest: Destination
@@ -118,68 +121,51 @@ class WebControlProSlatRange(WebControlProEntity, NumberEntity):
         super().__init__(coordinator, dest, self.translation_key)
         self._action = dest.action(ACTION_DESC.SlatRotate)
 
-    @callback
-    @override
-    def _handle_coordinator_update(self) -> None:
-        """Learn the range from the measured rotation."""
-        rotation = self._action["rotation"]
-        if (
-            rotation
-            and self._action.wms__minValue < rotation < self._action.wms__maxValue
-        ):
-            learned = self._value_func(self.native_value, rotation)
-            if learned != self.native_value:
-                # The library stores the overwrite with the next status refresh.
-                self._action[self._value_name] = learned
-        super()._handle_coordinator_update()
-
-    @property
-    @override
-    def native_min_value(self) -> float:
-        """Return the minimum value."""
-        # The wms__ prefix returns the value of the hub without the overwrite.
-        return self._value_func(self._action.wms__minValue, 0)
-
-    @property
-    @override
-    def native_max_value(self) -> float:
-        """Return the maximum value."""
-        return self._value_func(0, self._action.wms__maxValue)
-
     @property
     @override
     def native_value(self) -> float:
-        """Return the current min/max value."""
-        value = self._action[self._value_name]
-        # -75 and 75 are community-provided sane defaults for various devices.
-        if value is None:
-            value = self._value_func(-75, 75)
-        return float(value)
-
-    @override
-    async def async_set_native_value(self, value: float) -> None:
-        """Store the min/max value as overwrite of the action."""
-        self._action[self._value_name] = value
-        await self._action.sync()
-        self.coordinator.async_update_listeners()
+        """Return the limit in use."""
+        return float(self._action.rotation_range[self._index])
 
 
 class WebControlProSlatRangeMin(WebControlProSlatRange):
     """Representation of the minimum rotation range-option for a slat-based cover."""
 
+    _attr_native_max_value = 0
     _attr_translation_key = "rotation-min"
+    _index = 0
 
-    _value_name = "minValue"
-    _value_func = staticmethod(min)
+    @property
+    @override
+    def native_min_value(self) -> float:
+        """Return the minimum that the hub reports."""
+        return float(self._action.reported_rotation_range[0])
+
+    @override
+    async def async_set_native_value(self, value: float) -> None:
+        """Store the minimum in the library."""
+        await self._action.set_rotation_range(minimum=value)
+        self.coordinator.async_update_listeners()
 
 
 class WebControlProSlatRangeMax(WebControlProSlatRange):
     """Representation of the maximum rotation range-option for a slat-based cover."""
 
+    _attr_native_min_value = 0
     _attr_translation_key = "rotation-max"
+    _index = 1
 
-    _value_name = "maxValue"
-    _value_func = staticmethod(max)
+    @property
+    @override
+    def native_max_value(self) -> float:
+        """Return the maximum that the hub reports."""
+        return float(self._action.reported_rotation_range[1])
+
+    @override
+    async def async_set_native_value(self, value: float) -> None:
+        """Store the maximum in the library."""
+        await self._action.set_rotation_range(maximum=value)
+        self.coordinator.async_update_listeners()
 
 
 class WebControlProSlatRotation(WebControlProEntity, NumberEntity):
@@ -198,13 +184,13 @@ class WebControlProSlatRotation(WebControlProEntity, NumberEntity):
     @override
     def native_min_value(self) -> float:
         """Return the minimum value."""
-        return float(self._action.minValue)
+        return float(self._action.rotation_range[0])
 
     @property
     @override
     def native_max_value(self) -> float:
         """Return the maximum value."""
-        return float(self._action.maxValue)
+        return float(self._action.rotation_range[1])
 
     @property
     @override
@@ -216,7 +202,7 @@ class WebControlProSlatRotation(WebControlProEntity, NumberEntity):
     @override
     async def async_set_native_value(self, value: float) -> None:
         """Send the rotation and check the result later."""
-        await self._action(rotation=value)
+        await self._async_command(self._action(rotation=value))
         self.coordinator.async_schedule_refresh(self._dest.id, SETTLE_ROTATION)
 
 
@@ -231,10 +217,10 @@ class WebControlProSlatRotationRaw(WebControlProSlatRotation):
     @override
     def native_min_value(self) -> float:
         """Return the minimum value."""
-        return float(self._action.wms__minValue)
+        return float(self._action.reported_rotation_range[0])
 
     @property
     @override
     def native_max_value(self) -> float:
         """Return the maximum value."""
-        return float(self._action.wms__maxValue)
+        return float(self._action.reported_rotation_range[1])

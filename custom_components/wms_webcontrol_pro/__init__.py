@@ -3,7 +3,6 @@
 import shutil
 from pathlib import Path
 
-import aiohttp
 from homeassistant.const import CONF_HOST, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
@@ -12,6 +11,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.storage import STORAGE_DIR
 from homeassistant.helpers.typing import UNDEFINED, ConfigType
 
+from pywmswebcontrolpro.exceptions import WebControlProError
 from pywmswebcontrolpro.webcontrol import WebControlPro
 
 from .const import DOMAIN, MANUFACTURER, STATUS_REQUEST_SPACING
@@ -58,13 +58,19 @@ async def async_setup_entry(
     )
 
     try:
-        await hub.ping()
-    except (aiohttp.ClientError, TimeoutError) as err:
+        answers = await hub.ping()
+    except WebControlProError as err:
         raise ConfigEntryNotReady(
             translation_domain=DOMAIN,
             translation_key="cannot_connect",
             translation_placeholders={"host": host},
         ) from err
+    if not answers:
+        raise ConfigEntryNotReady(
+            translation_domain=DOMAIN,
+            translation_key="cannot_connect",
+            translation_placeholders={"host": host},
+        )
 
     dr.async_get(hass).async_get_or_create(
         config_entry_id=entry.entry_id,

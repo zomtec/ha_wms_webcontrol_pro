@@ -64,8 +64,11 @@ class WebControlProLight(WebControlProEntity, LightEntity):
     async def _async_switch(self, state: bool) -> None:
         """Switch the light, show the result and check it a moment later."""
         action = self._dest.action(ACTION_DESC.LightSwitch)
-        await action(
-            onOffState=state, responseType=WMS_WebControl_pro_API_responseType.Detailed
+        await self._async_command(
+            action(
+                onOffState=state,
+                responseType=WMS_WebControl_pro_API_responseType.Detailed,
+            )
         )
         action["onOffState"] = state
         self.coordinator.async_schedule_refresh(self._dest.id, SETTLE_SWITCH)
@@ -105,9 +108,11 @@ class WebControlProDimmer(WebControlProLight):
 
         action = self._dest.action(ACTION_DESC.LightDimming)
         percentage = brightness_to_value(BRIGHTNESS_SCALE, kwargs[ATTR_BRIGHTNESS])
-        await action(
-            percentage=percentage,
-            responseType=WMS_WebControl_pro_API_responseType.Detailed,
+        await self._async_command(
+            action(
+                percentage=percentage,
+                responseType=WMS_WebControl_pro_API_responseType.Detailed,
+            )
         )
         action["percentage"] = percentage
         self._dest.action(ACTION_DESC.LightSwitch)["onOffState"] = True
