@@ -6,7 +6,10 @@ Changed:
 
 - The device of the gateway is named *WebControl pro* instead of its host. The name is
   also applied to gateways that are already set up, unless the device was renamed in
-  Home Assistant.
+  Home Assistant. The names of its entities change with it (for example *WebControl pro
+  Poll success rate*), their entity IDs stay. For new setups the entity IDs start with
+  `webcontrol_pro`. With two gateways both devices have the same name, rename one of
+  them.
 
 ## 0.4.0
 
