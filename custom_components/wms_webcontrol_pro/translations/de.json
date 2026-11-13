@@ -98,6 +98,14 @@
       "valance-travel-time-close": {
         "name": "Volant: Laufzeit beim Schließen"
       }
+    },
+    "sensor": {
+      "last-successful-poll": {
+        "name": "Letzte erfolgreiche Abfrage"
+      },
+      "poll-success-rate": {
+        "name": "Erfolgsquote der Abfragen"
+      }
     }
   },
   "services": {

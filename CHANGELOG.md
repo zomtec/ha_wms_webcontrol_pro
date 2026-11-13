@@ -11,6 +11,18 @@ Breaking changes:
   (`<destination id>/<action id>.json`) are not read: enter the travel times and
   changed rotation limits again after the update. The old directories can be deleted.
 
+Added:
+
+- The device of the gateway has diagnostic entities: *Connectivity*, *Poll success
+  rate* and *Last successful poll* over all destinations.
+- Each destination has the diagnostic sensors *Poll success rate* and *Last successful
+  poll*, disabled by default.
+
+Changed:
+
+- A scene that belongs to no room is attached to the device of the gateway. Before, it
+  had no device.
+
 ## 0.2.1
 
 Requires `pywmswebcontrolpro` 0.2.1.

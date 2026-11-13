@@ -2,8 +2,10 @@
 
 import json
 import re
+from collections.abc import Generator
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 from homeassistant.const import CONF_HOST
@@ -81,6 +83,16 @@ def no_request_spacing(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "custom_components.wms_webcontrol_pro.STATUS_REQUEST_SPACING", 0
     )
+
+
+@pytest.fixture
+def entity_registry_enabled_by_default() -> Generator[None]:
+    """Enable the entities that are disabled by default."""
+    with patch(
+        "homeassistant.helpers.entity.Entity.entity_registry_enabled_default",
+        return_value=True,
+    ):
+        yield
 
 
 @pytest.fixture

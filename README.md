@@ -154,10 +154,28 @@ a load) is a device that is connected to it.
 | Button | Identify, reset of the rotation limits |
 | Light | Switchable lights and dimmers |
 | Switch | Loads |
-| Scene | Scenes of the gateway, attached to the device of their room |
+| Scene | Scenes of the gateway, attached to the device of their room, without a room to the gateway |
+| Binary sensor | Connectivity of the gateway |
+| Sensor | Polling statistics of the gateway and of each destination |
 
 An awning with a valance has two covers, one for each drive, the second one is named
 *Valance*. The valance has its own travel times.
+
+### Diagnostic entities
+
+The device of the gateway has three diagnostic entities:
+
+- *Connectivity* is on while the gateway answers the regular request every 30 minutes.
+  A gateway that does not answer is asked again every minute.
+- *Poll success rate* is the share of all status requests since the start of Home
+  Assistant that delivered data, over all destinations.
+- *Last successful poll* is the time of the last status request that delivered data.
+
+Each destination has its own *Poll success rate* and *Last successful poll*. They are
+disabled by default, enable them to look into radio problems of one component. A
+request counts as not successful when the radio channel was busy, the gateway had no
+data for the destination or did not answer. The statistics start again with every
+restart of Home Assistant, they stay available while the gateway does not answer.
 
 ### Covers
 
@@ -238,8 +256,9 @@ The entities only become unavailable when the gateway does not answer at all, it
 then asked again every minute.
 
 The library counts the results per destination and logs a warning only if a destination
-stays silent for a long time. The counters are part of the diagnostics download. The
-host is redacted in the diagnostics.
+stays silent for a long time. The counters are part of the diagnostics download, the
+success rate and the time of the last successful request are also shown by
+[diagnostic entities](#diagnostic-entities). The host is redacted in the diagnostics.
 
 ## Examples
 
@@ -298,7 +317,8 @@ actions:
   is asked again up to three times.
 - **A destination is unavailable:** the gateway reports a heartbeat error or a blocked
   drive for it, for example when the component is out of radio range. The diagnostics
-  show how often each destination answered, was busy or failed.
+  show how often each destination answered, was busy or failed, the sensors *Poll
+  success rate* and *Last successful poll* of the device show it over time.
 - **An action fails with "rejected the command":** the gateway did not send the
   command, usually because the radio channel was busy. Repeat the action.
 - **Download the diagnostics** in *Settings, Devices & services* with *Download
