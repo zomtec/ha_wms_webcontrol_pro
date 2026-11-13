@@ -64,7 +64,9 @@ def async_setup_destination_entities(
         dests = coordinator.hub.dests
         for dest_id in known.keys() - dests.keys():
             for entity in known.pop(dest_id):
-                entry.async_create_task(coordinator.hass, entity.async_remove())
+                # An entity that is disabled was not added and has no hass.
+                if entity.hass is not None:
+                    entry.async_create_task(coordinator.hass, entity.async_remove())
         new: list[Entity] = []
         for dest_id in dests.keys() - known.keys():
             known[dest_id] = list(factory(coordinator, dests[dest_id]))
@@ -117,3 +119,26 @@ class WebControlProEntity(CoordinatorEntity[WebControlProCoordinator]):
     async def _async_command(self, command: Awaitable[Any]) -> None:
         """Send a command for the destination to the hub."""
         await async_send_command(str(self._dest), command)
+
+
+class WebControlProHubEntity(CoordinatorEntity[WebControlProCoordinator]):
+    """Foundation of the entities of the hub itself.
+
+    They show what the integration knows about the hub, so they stay
+    available while the hub does not answer.
+    """
+
+    _attr_attribution = ATTRIBUTION
+    _attr_has_entity_name = True
+
+    def __init__(self, coordinator: WebControlProCoordinator, key: str) -> None:
+        """Initialize the entity of the hub, key tells entities apart."""
+        super().__init__(coordinator)
+        entry_id = coordinator.config_entry.entry_id
+        self._attr_unique_id = f"{entry_id}-{key}"
+        self._attr_device_info = DeviceInfo(identifiers={(DOMAIN, entry_id)})
+
+    @property
+    def available(self) -> bool:
+        """Return True, the values do not come from the hub."""
+        return True

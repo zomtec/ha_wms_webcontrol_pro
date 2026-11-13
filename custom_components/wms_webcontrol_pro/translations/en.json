@@ -98,6 +98,14 @@
       "valance-travel-time-close": {
         "name": "Valance closing time"
       }
+    },
+    "sensor": {
+      "last-successful-poll": {
+        "name": "Last successful poll"
+      },
+      "poll-success-rate": {
+        "name": "Poll success rate"
+      }
     }
   },
   "services": {

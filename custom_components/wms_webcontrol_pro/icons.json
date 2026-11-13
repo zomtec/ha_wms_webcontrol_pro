@@ -27,6 +27,11 @@
       "valance-travel-time-close": {
         "default": "mdi:timer-sand"
       }
+    },
+    "sensor": {
+      "poll-success-rate": {
+        "default": "mdi:radio-tower"
+      }
     }
   },
   "services": {
