@@ -334,10 +334,12 @@ actions:
 
 ## Stored data
 
-The library stores its data in the directory `.storage/wms_webcontrol_pro-<entry id>/`:
-`settings.json` holds the travel times and the rotation limits that were set or
-learned, `state.json` the last known position and tilt of the covers. The directory is
-removed when the config entry is removed.
+The library stores its data in the directory `.storage/wms_webcontrol_pro-<entry id>/`.
+Each device has a directory of its own there, named by the id of its destination, with
+two files: `settings.json` holds the travel times and the rotation limits that were set
+or learned, `state.json` the last known position and tilt of the cover. A device
+without such data has no directory. The whole directory is removed when the config
+entry is removed.
 
 ## Acknowledgments
 
