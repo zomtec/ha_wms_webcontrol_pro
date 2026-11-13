@@ -88,10 +88,40 @@ async def test_hub_device(
     )
 
     assert device is not None
-    assert device.name == "WebControl"
+    assert device.name == "WebControl pro"
     assert device.manufacturer == "WAREMA Renkhoff SE"
     assert device.model == "WMS WebControl pro"
     assert device.configuration_url == f"http://{HOST}/system"
+
+
+async def test_hub_device_of_existing_entry_is_renamed_but_keeps_user_name(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    gateway: FakeGateway,
+    device_registry: dr.DeviceRegistry,
+) -> None:
+    """An older device named after the host gets the new name, a user name stays."""
+    mock_config_entry.add_to_hass(hass)
+    device_registry.async_get_or_create(
+        config_entry_id=mock_config_entry.entry_id,
+        identifiers={(DOMAIN, mock_config_entry.entry_id)},
+        name=HOST,
+    )
+    device_registry.async_update_device(
+        device_registry.async_get_device_by_identifier(
+            (DOMAIN, mock_config_entry.entry_id), mock_config_entry.entry_id
+        ).id,
+        name_by_user="Mine",
+    )
+
+    assert await setup_config_entry(hass, mock_config_entry)
+
+    device = device_registry.async_get_device_by_identifier(
+        (DOMAIN, mock_config_entry.entry_id), mock_config_entry.entry_id
+    )
+    assert device is not None
+    assert device.name == "WebControl pro"
+    assert device.name_by_user == "Mine"
 
 
 async def test_stored_data_directory_is_removed_with_the_entry(

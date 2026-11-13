@@ -40,6 +40,11 @@
       "message": "The WMS WebControl pro rejected the command for {name}, for example because the radio channel is busy. The command was not sent again."
     }
   },
+  "device": {
+    "gateway": {
+      "name": "WebControl pro"
+    }
+  },
   "entity": {
     "button": {
       "rotation-reset": {
