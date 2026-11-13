@@ -88,7 +88,7 @@ async def test_hub_device(
     )
 
     assert device is not None
-    assert device.name == "WebControl"
+    assert device.name == "WebControl pro"
     assert device.manufacturer == "WAREMA Renkhoff SE"
     assert device.model == "WMS WebControl pro"
     assert device.configuration_url == f"http://{HOST}/system"

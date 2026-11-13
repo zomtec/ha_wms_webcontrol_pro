@@ -82,6 +82,7 @@ async def async_setup_entry(
         identifiers={(DOMAIN, entry.entry_id)},
         manufacturer=MANUFACTURER,
         model="WMS WebControl pro",
+        translation_key="gateway",
         configuration_url=f"http://{hub.host}/system",
     )
 

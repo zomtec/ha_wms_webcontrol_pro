@@ -40,6 +40,11 @@
       "message": "Der WMS WebControl pro hat den Befehl für {name} abgelehnt, zum Beispiel weil der Funkkanal belegt ist. Der Befehl wurde nicht erneut gesendet."
     }
   },
+  "device": {
+    "gateway": {
+      "name": "WebControl pro"
+    }
+  },
   "entity": {
     "button": {
       "rotation-reset": {

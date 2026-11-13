@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+Changed:
+
+- The device of the gateway is named *WebControl pro* instead of its host. The name is
+  also applied to gateways that are already set up, unless the device was renamed in
+  Home Assistant.
+
 ## 0.4.0
 
 Requires `pywmswebcontrolpro` 0.4.0.
