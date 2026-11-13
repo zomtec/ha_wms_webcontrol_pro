@@ -154,7 +154,7 @@ a load) is a device that is connected to it.
 | Button | Identify, reset of the rotation limits |
 | Light | Switchable lights and dimmers |
 | Switch | Loads |
-| Scene | Scenes of the gateway, attached to the device of their room |
+| Scene | Scenes of the gateway, attached to the device of their room, without a room to the gateway |
 | Binary sensor | Connectivity of the gateway |
 | Sensor | Polling statistics of the gateway and of each destination |
 

@@ -18,6 +18,11 @@ Added:
 - Each destination has the diagnostic sensors *Poll success rate* and *Last successful
   poll*, disabled by default.
 
+Changed:
+
+- A scene that belongs to no room is attached to the device of the gateway. Before, it
+  had no device.
+
 ## 0.2.1
 
 Requires `pywmswebcontrolpro` 0.2.1.

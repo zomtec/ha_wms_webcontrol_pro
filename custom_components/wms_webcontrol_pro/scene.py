@@ -90,9 +90,13 @@ class WebControlProScene(Scene):
         self._attr_name = scene.name
         self._attr_unique_id = str(scene.id)
 
-        # The scene belongs to the device of its room.
+        # The scene belongs to the device of its room, without one to the hub.
         room = scene.room
-        if room is not None:
+        if room is None:
+            self._attr_device_info = DeviceInfo(
+                identifiers={(DOMAIN, coordinator.config_entry.entry_id)}
+            )
+        else:
             self._attr_device_info = DeviceInfo(
                 identifiers={(DOMAIN, room_identifier(room.id))},
                 manufacturer=MANUFACTURER,

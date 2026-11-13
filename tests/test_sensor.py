@@ -2,6 +2,7 @@
 
 import pytest
 from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAIN
+from homeassistant.components.scene import DOMAIN as SCENE_DOMAIN
 from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
 from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant
@@ -16,9 +17,11 @@ from .helpers import setup_config_entry
 
 DEST_ID = 18894
 DESTINATIONS = 6
+SCENE_ID = 687471
 BUSY = {"errors": [0x50005]}
 
 ROLLER_SETUP = ("config_prod_roller_shutter.json", "status_prod_roller_shutter.json")
+SCENE_SETUP = ("config_prod_awning_dimmer.json", "status_prod_dimmer.json")
 
 roller_shutter = pytest.mark.parametrize("gateway", [ROLLER_SETUP], indirect=True)
 
@@ -160,3 +163,28 @@ async def test_connectivity_follows_the_answers_of_the_hub(
 
     assert hass.states.get(connectivity).state == STATE_OFF
     assert float(hass.states.get(rate).state) == pytest.approx(100 / DESTINATIONS)
+
+
+@pytest.mark.parametrize("gateway", [SCENE_SETUP], indirect=True)
+async def test_scene_without_a_room_belongs_to_the_hub(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    gateway: FakeGateway,
+    device_registry: dr.DeviceRegistry,
+    entity_registry: er.EntityRegistry,
+) -> None:
+    """A scene that the hub lists in no room is an entity of the hub device."""
+    gateway.config = {
+        **gateway.config,
+        "rooms": [{**room, "scenes": []} for room in gateway.config["rooms"]],
+    }
+    assert await setup_config_entry(hass, mock_config_entry)
+
+    entry = entity_registry.async_get(_entity_id(hass, SCENE_DOMAIN, str(SCENE_ID)))
+    device = device_registry.async_get_device_by_identifier(
+        (DOMAIN, ENTRY_ID), ENTRY_ID
+    )
+
+    assert entry is not None
+    assert device is not None
+    assert entry.device_id == device.id
