@@ -107,6 +107,27 @@ async def test_travel_time_of_the_valance_is_stored_on_its_own_action(
     assert float(hass.states.get(entity_id).state) == 12.5
 
 
+@pytest.mark.parametrize("gateway", [ROLLER_SETUP], indirect=True)
+@pytest.mark.usefixtures("gateway")
+async def test_travel_time_survives_a_reload(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry
+) -> None:
+    """A travel time is stored by the library and known again after a reload."""
+    assert await setup_config_entry(hass, mock_config_entry)
+    entity_id = _entity_id(hass, NUMBER_DOMAIN, f"{ROLLER_ID}-travel-time-close")
+    await hass.services.async_call(
+        NUMBER_DOMAIN,
+        SERVICE_SET_VALUE,
+        {ATTR_ENTITY_ID: entity_id, ATTR_VALUE: 39},
+        blocking=True,
+    )
+
+    assert await hass.config_entries.async_reload(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert float(hass.states.get(entity_id).state) == 39
+
+
 @pytest.mark.parametrize("gateway", [SLAT_SETUP], indirect=True)
 async def test_slat_range_numbers_default_and_reset(
     hass: HomeAssistant, mock_config_entry: MockConfigEntry, gateway: FakeGateway
