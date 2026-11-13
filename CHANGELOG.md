@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0 (unreleased)
+
+Requires `pywmswebcontrolpro` 0.3.0.
+
+Breaking changes:
+
+- The stored data moves to two files for each hub, `settings.json` and `state.json` in
+  `.storage/wms_webcontrol_pro-<entry id>/`. The files of earlier versions
+  (`<destination id>/<action id>.json`) are not read: enter the travel times and
+  changed rotation limits again after the update. The old directories can be deleted.
+
 ## 0.2.1
 
 Requires `pywmswebcontrolpro` 0.2.1.

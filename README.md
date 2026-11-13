@@ -314,9 +314,10 @@ actions:
 
 ## Stored data
 
-Settings and learned values are stored by the library in
-`.storage/wms_webcontrol_pro-<entry id>/<destination id>/<action id>.json`. The
-directory is removed when the config entry is removed.
+The library stores its data in the directory `.storage/wms_webcontrol_pro-<entry id>/`:
+`settings.json` holds the travel times and the rotation limits that were set or
+learned, `state.json` the last known position and tilt of the covers. The directory is
+removed when the config entry is removed.
 
 ## Acknowledgments
 
