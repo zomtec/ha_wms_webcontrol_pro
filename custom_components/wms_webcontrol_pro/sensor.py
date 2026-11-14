@@ -11,7 +11,7 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import PERCENTAGE, EntityCategory
+from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
@@ -43,7 +43,7 @@ SENSORS: tuple[WebControlProSensorDescription, ...] = (
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=0,
-        value_fn=lambda stats: stats.success_rate,
+        value_fn=lambda stats: stats.recent_success_rate,
     ),
     WebControlProSensorDescription(
         key="last-successful-poll",
@@ -51,6 +51,21 @@ SENSORS: tuple[WebControlProSensorDescription, ...] = (
         device_class=SensorDeviceClass.TIMESTAMP,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda stats: stats.last_ok,
+    ),
+)
+
+# The answer time belongs to one destination, the hub has no value for it.
+DESTINATION_SENSORS: tuple[WebControlProSensorDescription, ...] = (
+    *SENSORS,
+    WebControlProSensorDescription(
+        key="last-answer-time",
+        translation_key="last-answer-time",
+        device_class=SensorDeviceClass.DURATION,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
+        value_fn=lambda stats: stats.last_duration,
     ),
 )
 
@@ -74,7 +89,7 @@ def _entities(
     """Return the sensors of a destination."""
     return [
         WebControlProDestinationSensor(coordinator, dest, description)
-        for description in SENSORS
+        for description in DESTINATION_SENSORS
     ]
 
 

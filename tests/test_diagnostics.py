@@ -30,3 +30,18 @@ async def test_diagnostics(
     dest = diagnostics["dests"][18894]
     assert dest["stats"]["ok"] == 1
     assert dest["status"]["details"][0]["destinationId"] == 18894
+    assert dest["stats"]["causes"] == {"scheduled": {"ok": 1}}
+    assert dest["stats"]["last_duration"] is not None
+    polling = diagnostics["polling"]
+    assert polling["interval"] == pytest.approx(30 * 60 / 7)
+    assert polling["next_target"] == "hub"
+    assert list(polling["seconds_since_last_request"]) == [
+        "hub",
+        18894,
+        116682,
+        172555,
+        230952,
+        284942,
+        328518,
+    ]
+    assert polling["seconds_since_last_request"][18894] == 0

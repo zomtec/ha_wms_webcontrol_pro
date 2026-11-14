@@ -179,7 +179,7 @@ async def test_status_without_position_updates_the_tilt(
         },
     )
 
-    await data.coordinator.async_refresh()
+    await data.coordinator.async_refresh_destination(SLAT_ID)
     await hass.async_block_till_done()
 
     cover = hass.states.get(SLAT)
@@ -387,14 +387,14 @@ async def test_deviating_measurement_is_checked_again_a_limited_number_of_times(
     gateway.queue_status(ROLLER_ID, *answers)
     gateway.commands.clear()
 
-    await coordinator.async_refresh()
+    await coordinator.async_refresh_destination(ROLLER_ID)
     for step in range(1, 6):
         async_fire_time_changed(
             hass, dt_util.utcnow() + timedelta(seconds=FOLLOW_UP_POLL_DELAY * step + 1)
         )
         await hass.async_block_till_done(wait_background_tasks=True)
 
-    # One regular request and three follow-up requests.
+    # The first request and three follow-up requests.
     asked = [
         c
         for c in gateway.commands_named("getStatus")

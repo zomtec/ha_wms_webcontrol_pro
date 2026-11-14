@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.5.0 (unreleased)
+
+Requires `pywmswebcontrolpro` 0.5.0.
+
+Added:
+
+- Sensor *Last answer time* for each destination: the time the gateway took to answer
+  the last status request. It is disabled by default like the other statistics of a
+  destination.
+- The diagnostics contain the counters separately for regular requests and requests
+  after a command, and the state of the regular requests.
+
+Changed:
+
+- The regular status requests are spread evenly instead of being sent in a burst. The
+  30 minutes are shared by the gateway and its destinations, one of them is asked at
+  a time, with six destinations every 4 minutes and 17 seconds.
+- The device of a destination that is disabled in Home Assistant is not asked for its
+  status any more.
+- The setup only reads the configuration and no longer waits for the status of every
+  destination. The destinations are asked after it, one every 15 seconds. Until then
+  a cover shows its stored position.
+- Status requests that fall together, for example after a scene, are sent 10 seconds
+  apart instead of 2 seconds.
+- A gateway that stopped answering is noticed with the next status request instead of
+  the next reading of the configuration, which could take 30 minutes.
+- *Poll success rate* looks back 24 hours instead of to the start of Home Assistant.
+
 ## 0.4.1
 
 Changed:

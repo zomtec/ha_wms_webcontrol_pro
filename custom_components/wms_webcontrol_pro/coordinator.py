@@ -2,6 +2,9 @@
 
 import logging
 from dataclasses import dataclass
+from datetime import timedelta
+from time import monotonic
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
@@ -14,14 +17,24 @@ from pywmswebcontrolpro.exceptions import (
     WebControlProError,
     WebControlProResponseError,
 )
-from pywmswebcontrolpro.refresh import RefreshOutcome
+from pywmswebcontrolpro.refresh import RefreshCause, RefreshOutcome, RefreshResult
 from pywmswebcontrolpro.webcontrol import WebControlPro
 
-from .const import BASE_POLL_INTERVAL, DOMAIN, RETRY_AFTER_FAILURE
+from .const import (
+    BASE_POLL_INTERVAL,
+    DOMAIN,
+    MIN_POLL_INTERVAL,
+    RETRY_AFTER_FAILURE,
+    STARTUP_POLL_INTERVAL,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
 type WebControlProConfigEntry = ConfigEntry[WebControlProData]
+
+# Target of a regular request: the id of a destination or the hub itself.
+HUB = None
+type PollTarget = int | None
 
 
 @dataclass
@@ -38,7 +51,12 @@ def room_identifier(room_id: int) -> str:
 
 
 class WebControlProCoordinator(DataUpdateCoordinator[dict[int, RefreshOutcome]]):
-    """Poll the destinations of a hub rarely and once after each command."""
+    """Poll the hub and its destinations in turn and once after each command.
+
+    Each regular update asks one target, the configuration of the hub or the
+    status of one destination. The updates are spread evenly, so every target
+    is asked once in the base interval and the requests never come in a burst.
+    """
 
     config_entry: WebControlProConfigEntry
 
@@ -59,6 +77,8 @@ class WebControlProCoordinator(DataUpdateCoordinator[dict[int, RefreshOutcome]])
         self.hub = hub
         self.configuration_reads = 0
         self._pending: dict[tuple[int, str], CALLBACK_TYPE] = {}
+        # Monotonic time of the last request for each target, also a failed one.
+        self._attempts: dict[PollTarget, float] = {}
         self._absent_devices: set[str] = set()
         self._configuration_warned = False
 
@@ -99,6 +119,7 @@ class WebControlProCoordinator(DataUpdateCoordinator[dict[int, RefreshOutcome]])
         self._configuration_warned = False
         for dest_id in changes.removed:
             self.async_cancel_refresh(dest_id)
+            self._attempts.pop(dest_id, None)
         self._async_rename_devices(changes.renamed)
         self._async_configuration_read()
 
@@ -189,24 +210,106 @@ class WebControlProCoordinator(DataUpdateCoordinator[dict[int, RefreshOutcome]])
         """Return True if a request of the destination is scheduled."""
         return any(pending_id == dest_id for pending_id, _ in self._pending)
 
+    def _is_enabled(self, dest_id: int) -> bool:
+        """Return False if the device of the destination is disabled.
+
+        Nobody sees the status of a disabled device, asking for it would only
+        add radio traffic.
+        """
+        device = dr.async_get(self.hass).async_get_device_by_identifier(
+            (DOMAIN, str(dest_id)), self.config_entry.entry_id
+        )
+        return device is None or not device.disabled
+
+    def _polled_destinations(self) -> list[int]:
+        """Return the destinations that are asked for their status."""
+        return [dest_id for dest_id in self.hub.dests if self._is_enabled(dest_id)]
+
+    def _is_due(self, dest_id: int) -> bool:
+        """Return True if the regular request may ask the destination now."""
+        return not (self._has_pending(dest_id) or self._is_travelling(dest_id))
+
+    def _next_target(self) -> PollTarget:
+        """Return the target whose last request is the longest ago.
+
+        A destination that is driving or about to be asked after a command is
+        left out. With equal times the hub comes first, then the destinations
+        in the order of the configuration.
+        """
+        if not self.last_update_success:
+            return HUB
+        targets: list[PollTarget] = [HUB]
+        targets += [d for d in self._polled_destinations() if self._is_due(d)]
+        return min(targets, key=lambda t: self._attempts.get(t, float("-inf")))
+
+    def _poll_interval(self) -> timedelta:
+        """Return the time until the next regular request.
+
+        The base interval is shared by the hub and the polled destinations.
+        After the start the destinations are asked in quick succession once.
+        """
+        destinations = self._polled_destinations()
+        if any(d not in self._attempts and self._is_due(d) for d in destinations):
+            return STARTUP_POLL_INTERVAL
+        return max(BASE_POLL_INTERVAL / (len(destinations) + 1), MIN_POLL_INTERVAL)
+
     async def _async_update_data(self) -> dict[int, RefreshOutcome]:
-        """Request the status of every destination that is not about to be polled."""
-        first = self.data is None
-        if not first:
+        """Ask the next target, the setup already read the configuration."""
+        if self.data is None:
+            self._attempts[HUB] = monotonic()
+            self.update_interval = self._poll_interval()
+            return {}
+        target = self._next_target()
+        outcome: RefreshOutcome | None = None
+        if target is HUB:
             await self._async_read_configuration()
+            self._attempts[HUB] = monotonic()
+        else:
+            outcome = await self._async_request_status(target, RefreshCause.SCHEDULED)
         outcomes = {
-            dest_id: outcome
-            for dest_id, outcome in (self.data or {}).items()
+            dest_id: known
+            for dest_id, known in self.data.items()
             if dest_id in self.hub.dests
         }
-        for dest_id, dest in self.hub.dests.items():
-            if self._has_pending(dest_id) or self._is_travelling(dest_id):
-                continue
-            try:
-                outcomes[dest_id] = await dest.refresh(raise_on_error=first)
-            except WebControlProError as err:
-                raise self._update_failed() from err
+        if target is not HUB and outcome is not None:
+            outcomes[target] = outcome
+        self.update_interval = self._poll_interval()
         return outcomes
+
+    async def _async_request_status(
+        self, dest_id: int, cause: RefreshCause
+    ) -> RefreshOutcome:
+        """Request the status of a destination, tell if the hub is gone.
+
+        A request that failed is followed by a ping, so a hub that stopped
+        answering is noticed with the next request and not with the next
+        reading of the configuration.
+        """
+        outcome: RefreshOutcome = await self.hub.dests[dest_id].refresh(cause=cause)
+        self._attempts[dest_id] = monotonic()
+        if (
+            outcome.result is RefreshResult.ERROR
+            and not await self._async_hub_answers()
+        ):
+            raise self._update_failed()
+        return outcome
+
+    def async_polling_diagnostics(self) -> dict[str, Any]:
+        """Return the state of the regular requests for the diagnostics."""
+        now = monotonic()
+        targets: list[PollTarget] = [HUB, *self._polled_destinations()]
+        return {
+            "interval": self.update_interval.total_seconds()
+            if self.update_interval
+            else None,
+            "next_target": "hub" if (target := self._next_target()) is HUB else target,
+            "seconds_since_last_request": {
+                "hub" if target is HUB else target: round(now - self._attempts[target])
+                if target in self._attempts
+                else None
+                for target in targets
+            },
+        }
 
     @callback
     def async_schedule_refresh(self, dest_id: int, delay: float, key: str = "") -> None:
@@ -230,8 +333,8 @@ class WebControlProCoordinator(DataUpdateCoordinator[dict[int, RefreshOutcome]])
 
     @callback
     def async_schedule_refresh_all(self, delay: float, key: str) -> None:
-        """Request the status of every destination once after a delay."""
-        for dest_id in self.hub.dests:
+        """Request the status of every polled destination once after a delay."""
+        for dest_id in self._polled_destinations():
             self.async_schedule_refresh(dest_id, delay, key)
 
     @callback
@@ -247,11 +350,16 @@ class WebControlProCoordinator(DataUpdateCoordinator[dict[int, RefreshOutcome]])
     async def async_refresh_destination(self, dest_id: int) -> RefreshOutcome | None:
         """Request the status of one destination once and notify the entities.
 
-        The regular interval keeps running, it is not reset by this request.
+        The regular requests keep running. The destination was just asked, so
+        its turn among them comes last.
         """
-        if (dest := self.hub.dests.get(dest_id)) is None:
+        if dest_id not in self.hub.dests:
             return None
-        outcome: RefreshOutcome = await dest.refresh()
+        try:
+            outcome = await self._async_request_status(dest_id, RefreshCause.COMMAND)
+        except UpdateFailed as err:
+            self.async_set_update_error(err)
+            return None
         self.data = {**(self.data or {}), dest_id: outcome}
         self.async_update_listeners()
         return outcome

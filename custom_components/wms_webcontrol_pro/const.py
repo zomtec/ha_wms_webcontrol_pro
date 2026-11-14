@@ -8,12 +8,18 @@ SUGGESTED_HOST = "webcontrol"
 ATTRIBUTION = "Data provided by WMS WebControl pro API"
 MANUFACTURER = "WAREMA Renkhoff SE"
 
-# The hub is a radio gateway, a long interval keeps the radio traffic low.
+# The hub is a radio gateway, a long interval keeps the radio traffic low. The
+# hub and each destination are asked once in this time, evenly spread over it.
 BASE_POLL_INTERVAL = timedelta(minutes=30)
+# Shortest time between two regular requests, for hubs with many destinations.
+MIN_POLL_INTERVAL = timedelta(seconds=10)
+# Time between two requests while a destination was not asked yet after the start.
+STARTUP_POLL_INTERVAL = timedelta(seconds=15)
 # A hub that did not answer is asked again after this many seconds.
 RETRY_AFTER_FAILURE = 60.0
-# Pause between two status requests to the hub.
-STATUS_REQUEST_SPACING = 2.0
+# Pause between two status requests to the hub. Requests after a scene or after
+# commands for several destinations fall together and are spread by it.
+STATUS_REQUEST_SPACING = 10.0
 
 SERVICE_SET_COVER_POSITION_AND_TILT = "set_cover_position_and_tilt"
 

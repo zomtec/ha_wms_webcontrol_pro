@@ -1,5 +1,8 @@
 """Tests for the diagnostic entities of the hub and the polling statistics."""
 
+import time
+from datetime import timedelta
+
 import pytest
 from homeassistant.components.binary_sensor import DOMAIN as BINARY_SENSOR_DOMAIN
 from homeassistant.components.scene import DOMAIN as SCENE_DOMAIN
@@ -59,7 +62,9 @@ async def test_hub_device_has_enabled_diagnostic_entities(
 
 @roller_shutter
 @pytest.mark.usefixtures("gateway")
-@pytest.mark.parametrize("key", ["poll-success-rate", "last-successful-poll"])
+@pytest.mark.parametrize(
+    "key", ["poll-success-rate", "last-successful-poll", "last-answer-time"]
+)
 async def test_destination_statistics_are_disabled_by_default(
     hass: HomeAssistant,
     mock_config_entry: MockConfigEntry,
@@ -103,6 +108,59 @@ async def test_destination_statistics_follow_the_polls(
     assert dt_util.parse_datetime(hass.states.get(last).state) == last_ok.replace(
         microsecond=0
     )
+
+
+@roller_shutter
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_answer_time_is_the_duration_of_the_last_answer(
+    hass: HomeAssistant, mock_config_entry: MockConfigEntry, gateway: FakeGateway
+) -> None:
+    """The sensor shows how long the hub took, also for a busy answer."""
+    assert await setup_config_entry(hass, mock_config_entry)
+    answer_time = _entity_id(hass, SENSOR_DOMAIN, f"{DEST_ID}-last-answer-time")
+    dest = mock_config_entry.runtime_data.hub.dests[DEST_ID]
+    assert float(hass.states.get(answer_time).state) == pytest.approx(
+        dest.stats.last_duration, abs=1e-6
+    )
+
+    gateway.queue_status(DEST_ID, BUSY)
+    await mock_config_entry.runtime_data.coordinator.async_refresh_destination(DEST_ID)
+    await hass.async_block_till_done()
+    assert float(hass.states.get(answer_time).state) == pytest.approx(
+        dest.stats.last_duration, abs=1e-6
+    )
+
+    gateway.stop_answering("getStatus")
+    await mock_config_entry.runtime_data.coordinator.async_refresh_destination(DEST_ID)
+    await hass.async_block_till_done()
+
+    assert hass.states.get(answer_time).state == STATE_UNKNOWN
+
+
+@roller_shutter
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_success_rate_looks_back_a_day(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    gateway: FakeGateway,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A poll that is older than 24 hours does not count for the rate."""
+    assert await setup_config_entry(hass, mock_config_entry)
+    rate = _entity_id(hass, SENSOR_DOMAIN, f"{DEST_ID}-poll-success-rate")
+    coordinator = mock_config_entry.runtime_data.coordinator
+    gateway.queue_status(DEST_ID, BUSY)
+    await coordinator.async_refresh_destination(DEST_ID)
+    await hass.async_block_till_done()
+    assert float(hass.states.get(rate).state) == 50
+
+    later = time.monotonic() + timedelta(hours=25).total_seconds()
+    monkeypatch.setattr("pywmswebcontrolpro.destination.time.monotonic", lambda: later)
+    monkeypatch.setattr("pywmswebcontrolpro.refresh.time.monotonic", lambda: later)
+    await coordinator.async_refresh_destination(DEST_ID)
+    await hass.async_block_till_done()
+
+    assert float(hass.states.get(rate).state) == 0
 
 
 @roller_shutter
