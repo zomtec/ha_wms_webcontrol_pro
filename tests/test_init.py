@@ -35,17 +35,18 @@ async def test_setup_is_retried_if_the_hub_is_unreachable(
     assert len(aioclient_mock.mock_calls) == 1
 
 
-async def test_setup_is_retried_if_the_status_request_fails(
+async def test_setup_does_not_depend_on_the_status_requests(
     hass: HomeAssistant,
     mock_config_entry: MockConfigEntry,
     gateway: FakeGateway,
 ) -> None:
-    """A failing first status request makes the setup retry later."""
+    """The setup only needs the configuration, the status is requested later."""
     gateway.stop_answering("getStatus")
 
-    assert not await setup_config_entry(hass, mock_config_entry)
+    assert await setup_config_entry(hass, mock_config_entry, startup_polls=False)
 
-    assert mock_config_entry.state is ConfigEntryState.SETUP_RETRY
+    assert mock_config_entry.state is ConfigEntryState.LOADED
+    assert not gateway.commands_named("getStatus")
 
 
 async def test_setup_is_retried_if_the_ping_reports_an_error(

@@ -13,7 +13,7 @@ from custom_components.wms_webcontrol_pro import async_remove_config_entry_devic
 from custom_components.wms_webcontrol_pro.const import DOMAIN
 
 from .conftest import ENTRY_ID, FakeGateway
-from .helpers import setup_config_entry
+from .helpers import read_configuration, setup_config_entry
 
 DEST_ID = 18894
 OTHER_DEST_ID = 116682
@@ -45,7 +45,7 @@ async def test_destination_that_appears_gets_entities(
     before = len(er.async_entries_for_config_entry(entity_registry, ENTRY_ID))
 
     gateway.config = full_config
-    await mock_config_entry.runtime_data.coordinator.async_refresh()
+    await read_configuration(mock_config_entry)
     await hass.async_block_till_done()
 
     after = er.async_entries_for_config_entry(entity_registry, ENTRY_ID)
@@ -69,7 +69,7 @@ async def test_destination_that_disappears_loses_its_device(
 
     gateway.config = _without_destination(gateway.config, OTHER_DEST_ID)
     coordinator = mock_config_entry.runtime_data.coordinator
-    await coordinator.async_refresh()
+    await read_configuration(mock_config_entry)
     await hass.async_block_till_done()
 
     # The first reading only takes the entities away, their settings stay.
@@ -82,7 +82,7 @@ async def test_destination_that_disappears_loses_its_device(
     )
     assert OTHER_DEST_ID not in coordinator.data
 
-    await coordinator.async_refresh()
+    await read_configuration(mock_config_entry)
     await hass.async_block_till_done()
 
     assert device_registry.async_get(device.id) is None
@@ -107,13 +107,12 @@ async def test_destination_that_is_missing_once_keeps_its_device(
     )
     assert device
     entities = er.async_entries_for_device(entity_registry, device.id)
-    coordinator = mock_config_entry.runtime_data.coordinator
 
     gateway.config = _without_destination(full_config, OTHER_DEST_ID)
-    await coordinator.async_refresh()
+    await read_configuration(mock_config_entry)
     gateway.config = full_config
-    await coordinator.async_refresh()
-    await coordinator.async_refresh()
+    await read_configuration(mock_config_entry)
+    await read_configuration(mock_config_entry)
     await hass.async_block_till_done()
 
     assert device_registry.async_get(device.id)
@@ -168,7 +167,7 @@ async def test_destination_that_is_renamed_renames_its_device(
             dest["names"] = ["Renamed", "", "", ""]
     gateway.config = renamed
 
-    await mock_config_entry.runtime_data.coordinator.async_refresh()
+    await read_configuration(mock_config_entry)
     await hass.async_block_till_done()
 
     device = device_registry.async_get_device_by_identifier(
@@ -200,7 +199,7 @@ async def test_device_name_given_in_home_assistant_stays(
             dest["names"] = ["Renamed", "", "", ""]
     gateway.config = renamed
 
-    await mock_config_entry.runtime_data.coordinator.async_refresh()
+    await read_configuration(mock_config_entry)
     await hass.async_block_till_done()
 
     device = device_registry.async_get_device_by_identifier(

@@ -105,6 +105,9 @@
       }
     },
     "sensor": {
+      "last-answer-time": {
+        "name": "Last answer time"
+      },
       "last-successful-poll": {
         "name": "Last successful poll"
       },

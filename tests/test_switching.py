@@ -27,7 +27,7 @@ from pytest_homeassistant_custom_component.common import (
 from custom_components.wms_webcontrol_pro.const import SETTLE_SCENE
 
 from .conftest import FakeGateway
-from .helpers import setup_config_entry
+from .helpers import read_configuration, setup_config_entry
 
 LIGHT_ID = 97358
 SWITCH_ID = 499120
@@ -241,18 +241,17 @@ async def test_scene_that_disappears_is_removed_after_two_readings(
     """One reading without the scene removes the entity, the second its entry."""
     assert await setup_config_entry(hass, mock_config_entry)
     entity_id = _entity_id(hass, SCENE_DOMAIN, str(SCENE_ID))
-    coordinator = mock_config_entry.runtime_data.coordinator
     gateway.config = {
         **gateway.config,
         "scenes": [s for s in gateway.config["scenes"] if s["id"] != SCENE_ID],
     }
 
-    await coordinator.async_refresh()
+    await read_configuration(mock_config_entry)
     await hass.async_block_till_done()
     assert hass.states.get(entity_id).state == STATE_UNAVAILABLE
     assert entity_registry.async_get(entity_id)
 
-    await coordinator.async_refresh()
+    await read_configuration(mock_config_entry)
     await hass.async_block_till_done()
     assert entity_registry.async_get(entity_id) is None
     assert hass.states.get(entity_id) is None

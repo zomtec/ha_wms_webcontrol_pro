@@ -239,7 +239,7 @@ async def test_measured_rotation_beyond_the_range_widens_it(
         },
     )
 
-    await mock_config_entry.runtime_data.coordinator.async_refresh()
+    await mock_config_entry.runtime_data.coordinator.async_refresh_destination(SLAT_ID)
     await hass.async_block_till_done()
 
     assert float(hass.states.get(maximum).state) == 100

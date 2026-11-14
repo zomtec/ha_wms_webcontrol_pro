@@ -165,17 +165,21 @@ An awning with a valance has two covers, one for each drive, the second one is n
 
 The device of the gateway has three diagnostic entities:
 
-- *Connectivity* is on while the gateway answers the regular request every 30 minutes.
-  A gateway that does not answer is asked again every minute.
-- *Poll success rate* is the share of all status requests since the start of Home
-  Assistant that delivered data, over all destinations.
+- *Connectivity* is on while the gateway answers the regular requests. A gateway that
+  does not answer is asked again every minute.
+- *Poll success rate* is the share of the status requests of the last 24 hours that
+  delivered data, over all destinations.
 - *Last successful poll* is the time of the last status request that delivered data.
 
-Each destination has its own *Poll success rate* and *Last successful poll*. They are
-disabled by default, enable them to look into radio problems of one component. A
-request counts as not successful when the radio channel was busy, the gateway had no
-data for the destination or did not answer. The statistics start again with every
-restart of Home Assistant, they stay available while the gateway does not answer.
+Each destination has its own *Poll success rate* and *Last successful poll*, and in
+addition *Last answer time*: the time the gateway took to answer the last status
+request for this destination, whatever the answer was. Its history shows how the
+radio path to a component behaves over time. It is unknown when the gateway did not
+answer at all. These sensors are disabled by default, enable them to look into radio
+problems of one component. A request counts as not successful when the radio channel
+was busy, the gateway had no data for the destination or did not answer. The
+statistics start again with every restart of Home Assistant, they stay available
+while the gateway does not answer.
 
 ### Covers
 
@@ -238,7 +242,22 @@ movements do not cancel each other. Fields: `position` and `tilt_position`, both
 
 The gateway is a radio gateway, every status request puts traffic on the radio channel.
 One coordinator per gateway therefore asks each destination only rarely (every 30
-minutes) and never repeats a request when the radio channel is busy. After a command
+minutes) and never repeats a request when the radio channel is busy.
+
+The regular requests never come in a burst. The 30 minutes are shared evenly by the
+gateway (its configuration) and the destinations, and each time one of them is asked,
+the one whose last request is the longest ago. With six destinations a request is
+sent every 4 minutes and 17 seconds. The time between two requests is never shorter
+than 10 seconds. A destination that was asked after a command takes its next turn
+last, and one that is driving or about to be asked is left out. The device of a
+destination that is disabled in Home Assistant is not asked at all.
+
+The setup only reads the configuration. After it every destination is asked once,
+one every 15 seconds, until then a cover shows its stored position. Status requests
+that fall together, for example after a scene or after commands for several
+destinations, are sent 10 seconds apart.
+
+After a command
 the integration asks the affected destination once for its status: after the calculated
 drive time for covers, after a few seconds for lights, switches and the rotation. If a
 cover reports a position that differs from the calculated one, it is asked again up to
@@ -253,12 +272,16 @@ does not answer is reported as an error of the action. It is not sent again.
 
 If a single request for the configuration fails, the known configuration stays in use.
 The entities only become unavailable when the gateway does not answer at all, it is
-then asked again every minute.
+then asked again every minute. A status request that fails is followed by a ping, so
+a gateway that stopped answering is noticed with the next request.
 
 The library counts the results per destination and logs a warning only if a destination
-stays silent for a long time. The counters are part of the diagnostics download, the
-success rate and the time of the last successful request are also shown by
-[diagnostic entities](#diagnostic-entities). The host is redacted in the diagnostics.
+stays silent for a long time. The counters are part of the diagnostics download,
+separately for regular requests and requests after a command, together with the state
+of the regular requests (interval, next target and the time since the last request
+for each target). The success rate, the time of the last successful request and the
+last answer time are also shown by [diagnostic entities](#diagnostic-entities). The
+host is redacted in the diagnostics.
 
 ## Examples
 
@@ -306,7 +329,10 @@ actions:
   not updated, reload the integration for that.
 - The gateway offers its API only over HTTP without authentication. Run it in a
   trusted network.
-- After a scene the state of the components is unknown for up to two minutes.
+- After a scene the state of the components is unknown for up to two minutes, and up
+  to a minute longer for the last of several components.
+- After a restart the measured state of the components arrives within the first
+  minutes, one component every 15 seconds.
 
 ## Troubleshooting
 

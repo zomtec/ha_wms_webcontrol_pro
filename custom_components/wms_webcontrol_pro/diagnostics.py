@@ -15,4 +15,8 @@ async def async_get_config_entry_diagnostics(
     hass: HomeAssistant, entry: WebControlProConfigEntry
 ) -> dict[str, Any]:
     """Return diagnostics for a config entry."""
-    return async_redact_data(entry.runtime_data.hub.diag(), TO_REDACT)
+    data = entry.runtime_data
+    return async_redact_data(
+        {**data.hub.diag(), "polling": data.coordinator.async_polling_diagnostics()},
+        TO_REDACT,
+    )
